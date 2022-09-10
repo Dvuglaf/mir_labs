@@ -3,14 +3,12 @@ import numpy as np
 from matplotlib import pyplot as plt
 from skimage.io import show
 
-m_1 = np.array(([0], [-2]))
-m_2 = np.array(([-1], [1]))
-m_3 = np.array(([2], [0]))
-
-n = 2
+n = 2  # two components
+N = 200  # number of values in selection
 
 
-def generate_normal():
+# Generating two normally distributed numbers from uniformly distributed numbers
+def get_random_normal():
     mean = 0.5
     scale = np.sqrt(1 / 12)
 
@@ -25,7 +23,7 @@ def generate_normal():
 
 
 def get_a(b):
-    a = np.zeros((2, 2))
+    a = np.zeros((n, n))
     a[0][0] = np.sqrt(b[0][0])
     a[1][0] = b[0][1] / np.sqrt(b[0][0])
     a[1][1] = np.sqrt(b[1][1] - (b[0][1] ** 2) / b[0][0])
@@ -33,27 +31,18 @@ def get_a(b):
 
 
 def get_e():
-    return generate_normal()
+    return get_random_normal()
 
 
 def get_x(a, e, m):
     return np.matmul(a, e) + m
 
 
-def get_parameters(selection, N):
-    mean = np.sum(selection, axis=0) / N
-
-    b = 0
-    for i in range(N):
-        b += (np.matmul(selection[i, :, :], selection[i, :, :].transpose()) - np.matmul(m_1, m_1.transpose()))
-    b /= N
-
-    return mean, b
-
-
-# Return N vectors
-def get_selection(a, m, N=200):
+# Return N vectors, element is vector column
+def get_selection(b, m):
     selection = np.zeros((N, n, 1))
+
+    a = get_a(b)
 
     for i in range(N):
         e = get_e()
@@ -63,19 +52,57 @@ def get_selection(a, m, N=200):
     return selection
 
 
-def main():
-    b_1 = np.array(([1, 0], [0, 1]))
-    b_2 = np.array(([0.7, 0], [0, 0.7]))
-    a_1 = get_a(b_1)
-    a_2 = get_a(b_2)
-    selection_1 = get_selection(a_1, m_1)
-    selection_2 = get_selection(a_2, m_2)
-    plt.plot(selection_1[:, 0, :], selection_1[:, 1, :], '+', markersize=5, color='black')
-    plt.plot(selection_2[:, 0, :], selection_2[:, 1, :], '*', markersize=5, color='black')
-    show()
+# Parameters estimation
+def get_parameters(selection, m):
+    est_mean = np.sum(selection, axis=0) / N
 
-    #parameters = get_parameters(selection, 200)
-    #print(f"M: \n{parameters[0]}\nB: \n{parameters[1]}")
+    est_b = 0
+    for vector_col in selection:
+        est_b += (np.matmul(vector_col, vector_col.transpose()) - np.matmul(m, m.transpose())) / N
+
+    return est_mean, est_b
+
+
+def main():
+    # Const values
+    m_1 = np.array(([0],
+                    [-2]))
+
+    m_2 = np.array(([-1],
+                    [1]))
+
+    m_3 = np.array(([2],
+                    [0]))
+
+    # Manually selected values
+    b_1 = np.array(([1, 0],
+                    [0, 1]))
+
+    b_2 = np.array(([0.7, 0],
+                    [0, 0.7]))
+
+    b_3 = np.array(([0.5, 0],
+                    [0, 0.5]))
+
+    # Generating three selections
+    selection_1 = get_selection(b_1, m_1)
+    selection_2 = get_selection(b_2, m_2)
+    selection_3 = get_selection(b_3, m_3)
+
+    # Parameters estimation and printing
+    parameters_1 = get_parameters(selection_1, m_1)
+    parameters_2 = get_parameters(selection_2, m_2)
+    parameters_3 = get_parameters(selection_3, m_3)
+    print(f"M_1: \n{parameters_1[0]}\nB_1: \n{parameters_1[1]}\n")
+    print(f"M_2: \n{parameters_2[0]}\nB_2: \n{parameters_2[1]}\n")
+    print(f"M_3: \n{parameters_3[0]}\nB_3: \n{parameters_3[1]}\n")
+
+    # Show selections
+    plt.plot(selection_1[:, 0, :], selection_1[:, 1, :], '+', markersize=5, color='black')
+    plt.plot(selection_2[:, 0, :], selection_2[:, 1, :], '*', markersize=5, color='red')
+    plt.plot(selection_3[:, 0, :], selection_3[:, 1, :], '.', markersize=5, color='blue')
+    show()
 
 
 main()
+# TODO: select b_3 value
