@@ -1,108 +1,124 @@
-# Лабораторная работа 1. Вариант 25.
 import numpy as np
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 from skimage.io import show
 
-n = 2  # two components
-N = 200  # number of values in selection
+def generate_normal(mu, sigma, size):  # из равномерного в нормальное
+    n = 12
+    mu = 1 / 2
+    sigma = np.sqrt(1 / 12)
+    sum1 = np.sum(np.random.uniform(size=n))
+    sum2 = np.sum(np.random.uniform(size=n))
+    val1 = (sum1 - n * mu) / (sigma * np.sqrt(n))
+    val2 = (sum2 - n * mu) / (sigma * np.sqrt(n))
+    return np.array(([val1], [val2]))
 
 
-# Generating two normally distributed numbers from uniformly distributed numbers
-def get_random_normal():
-    mean = 0.5
-    scale = np.sqrt(1 / 12)
-
-    iterations = 144
-
-    first = np.sum(np.random.uniform(size=iterations))
-    second = np.sum(np.random.uniform(size=iterations))
-
-    def __get_value(x): return (x - mean * iterations) / (scale * np.sqrt(iterations))
-
-    return np.array(([__get_value(first)], [__get_value(second)]))
-
-
-def get_a(b):
-    a = np.zeros((n, n))
-    a[0][0] = np.sqrt(b[0][0])
-    a[1][0] = b[0][1] / np.sqrt(b[0][0])
-    a[1][1] = np.sqrt(b[1][1] - (b[0][1] ** 2) / b[0][0])
+def generate_a(b):
+    a = np.zeros((2, 2))
+    a[0, 0] = np.sqrt(b[0, 0])
+    a[1, 0] = b[0, 1] / a[0, 0]
+    a[1, 1] = np.sqrt(b[1, 1] - b[0, 1] ** 2 / b[0, 0])
     return a
 
 
-def get_e():
-    return get_random_normal()
-
-
-def get_x(a, e, m):
+def generate_x(a, e, m):
     return np.matmul(a, e) + m
 
 
-# Return N vectors, element is vector column
-def get_selection(b, m):
-    selection = np.zeros((N, n, 1))
-
-    a = get_a(b)
-
+def generate_dataset(a, m, size, N):
+    dataset = np.ndarray((2, 1, N))
     for i in range(N):
-        e = get_e()
-        x = get_x(a, e, m)
-        selection[i] = x
+        mu, sigma, size = 0, 1, (2, 1)
+        e = generate_normal(mu, sigma, size)
+        x = generate_x(a, e, m)
+        dataset[:, :, i] = x
+    return dataset
 
-    return selection
+
+def get_parameters(dataset, N):
+    m = np.sum(dataset, axis=2) / N
+    b = 0
+    for i in range(N):
+        b += np.matmul((dataset[:,:,i] - m), np.transpose(dataset[:,:,i] - m))
+    b /= N
+    return m, b
 
 
-# Parameters estimation
-def get_parameters(selection, m):
-    est_mean = np.sum(selection, axis=0) / N
-
-    est_b = 0
-    for vector_col in selection:
-        est_b += (np.matmul(vector_col, vector_col.transpose()) - np.matmul(m, m.transpose())) / N
-
-    return est_mean, est_b
+def get_rho(m1, m2, b1, b2):
+    rho = 0
+    if np.array_equal(b1, b2):  # расстояние Махаланобиса
+        rho = np.matmul(np.matmul(np.transpose(np.subtract(m2, m1)), np.linalg.inv(b1)), np.subtract(m2, m1))
+    else:  # расстояние Бхатачария
+        rho = (1 / 4) * np.matmul(np.matmul(np.transpose(np.subtract(m2, m1)), np.linalg.inv((b1 + b2) / 2)), np.subtract(m2, m1))
+        + (1 / 2) * np.log(np.linalg.det((b1 + b2) / 2) / np.sqrt(np.linalg.det(b1) * np.linalg.det(b2)))
+    return rho
 
 
 def main():
-    # Const values
-    m_1 = np.array(([0],
-                    [-2]))
+    N = 200
+    size = (2, 1)
+    m1 = [[0], [-2]]
+    m2 = [[-1], [1]]
+    m3 = [[2], [0]]
 
-    m_2 = np.array(([-1],
-                    [1]))
+    # два вектора с равными корреляционными матрицами
+    b = np.array(([0.5, -0.2], [-0.2, 0.5]))
+    a = generate_a(b)
 
-    m_3 = np.array(([2],
-                    [0]))
+    dataset1 = generate_dataset(a, m1, size, N)
+    dataset2 = generate_dataset(a, m2, size, N)
 
-    # Manually selected values
-    b_1 = np.array(([1, 0],
-                    [0, 1]))
+    np.save("task_1_dataset_1", dataset1)
+    np.save("task_1_dataset_2", dataset2)
 
-    b_2 = np.array(([0.7, 0],
-                    [0, 0.7]))
+    m1_exp, b1_exp = get_parameters(dataset1, N)
+    m2_exp, b2_exp = get_parameters(dataset2, N)
+    print(f'Матожидание 1й выборки:\n{m1_exp}\nКорреляционная матрица 1й выборки:\n{b1_exp}')
+    print(f'Матожидание 2й выборки:\n{m2_exp}\nКорреляционная матрица 2й выборки:\n{b2_exp}')
+    rho = get_rho(m1, m2, b, b)
+    print(f'Мера близости распределений (расстояние Махаланобиса):\n{rho}')
 
-    b_3 = np.array(([0.5, 0],
-                    [0, 0.5]))
-
-    # Generating three selections
-    selection_1 = get_selection(b_1, m_1)
-    selection_2 = get_selection(b_2, m_2)
-    selection_3 = get_selection(b_3, m_3)
-
-    # Parameters estimation and printing
-    parameters_1 = get_parameters(selection_1, m_1)
-    parameters_2 = get_parameters(selection_2, m_2)
-    parameters_3 = get_parameters(selection_3, m_3)
-    print(f"M_1: \n{parameters_1[0]}\nB_1: \n{parameters_1[1]}\n")
-    print(f"M_2: \n{parameters_2[0]}\nB_2: \n{parameters_2[1]}\n")
-    print(f"M_3: \n{parameters_3[0]}\nB_3: \n{parameters_3[1]}\n")
-
-    # Show selections
-    plt.plot(selection_1[:, 0, :], selection_1[:, 1, :], '+', markersize=5, color='black')
-    plt.plot(selection_2[:, 0, :], selection_2[:, 1, :], '*', markersize=5, color='red')
-    plt.plot(selection_3[:, 0, :], selection_3[:, 1, :], '.', markersize=5, color='blue')
+    fig = plt.figure()
+    plt.plot(dataset1[0, :, :], dataset1[1, :, :], color='red', marker = '.')
+    plt.plot(dataset2[0, :, :], dataset2[1, :, :], color='green', marker = '+')
     show()
 
+    print('\n')
+
+    # три вектора с разными корреляционными матрицами
+    b1 = np.array(([0.5, 0], [0, 0.5]))
+    b2 = np.array(([0.4, 0.1], [0.1, 0.6]))
+    b3 = np.array(([0.6, -0.2], [-0.2, 0.6]))
+
+    a1 = generate_a(b1)
+    a2 = generate_a(b2)
+    a3 = generate_a(b3)
+
+    dataset1 = generate_dataset(a1, m1, size, N)
+    dataset2 = generate_dataset(a2, m2, size, N)
+    dataset3 = generate_dataset(a3, m3, size, N)
+
+    np.save("task_2_dataset_1", dataset1)
+    np.save("task_2_dataset_2", dataset2)
+    np.save("task_2_dataset_3", dataset3)
+
+    m1_exp, b1_exp = get_parameters(dataset1, N)
+    m2_exp, b2_exp = get_parameters(dataset2, N)
+    m3_exp, b3_exp = get_parameters(dataset3, N)
+    print(f'Матожидание 1й выборки:\n{m1_exp}\nКорреляционная матрица 1й выборки:\n{b1_exp}')
+    print(f'Матожидание 2й выборки:\n{m2_exp}\nКорреляционная матрица 2й выборки:\n{b2_exp}')
+    print(f'Матожидание 3й выборки:\n{m3_exp}\nКорреляционная матрица 3й выборки:\n{b3_exp}')
+    rho12 = get_rho(m1, m2, b1, b2)
+    print(f'Мера близости распределений 1 и 2 (расстояние Бхатачария):\n{rho12}')
+    rho13 = get_rho(m1, m3, b1, b3)
+    print(f'Мера близости распределений 1 и 3 (расстояние Бхатачария):\n{rho13}')
+    rho23 = get_rho(m2, m3, b2, b3)
+    print(f'Мера близости распределений 2 и 3 (расстояние Бхатачария):\n{rho23}')
+
+    fig = plt.figure()
+    plt.plot(dataset1[0, :, :], dataset1[1, :, :], color='red', marker='.')
+    plt.plot(dataset2[0, :, :], dataset2[1, :, :], color='green', marker='+')
+    plt.plot(dataset3[0, :, :], dataset3[1, :, :], color='blue', marker='x')
+    show()
 
 main()
-# TODO: select b_3 value
