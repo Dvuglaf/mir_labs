@@ -2,8 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage.io import show
 
-def generate_normal(mu, sigma, size):  # из равномерного в нормальное
-    n = 12
+
+def generate_normal():  # из равномерного в нормальное
+    n = 100
     mu = 1 / 2
     sigma = np.sqrt(1 / 12)
     sum1 = np.sum(np.random.uniform(size=n))
@@ -25,11 +26,10 @@ def generate_x(a, e, m):
     return np.matmul(a, e) + m
 
 
-def generate_dataset(a, m, size, N):
+def generate_dataset(a, m, N):
     dataset = np.ndarray((2, 1, N))
     for i in range(N):
-        mu, sigma, size = 0, 1, (2, 1)
-        e = generate_normal(mu, sigma, size)
+        e = generate_normal()
         x = generate_x(a, e, m)
         dataset[:, :, i] = x
     return dataset
@@ -39,8 +39,8 @@ def get_parameters(dataset, N):
     m = np.sum(dataset, axis=2) / N
     b = 0
     for i in range(N):
-        b += np.matmul((dataset[:,:,i] - m), np.transpose(dataset[:,:,i] - m))
-    b /= N
+        b += np.matmul((dataset[:, :, i] - m), np.transpose(dataset[:, :, i] - m))
+    b /= (N - 1)
     return m, b
 
 
@@ -49,14 +49,14 @@ def get_rho(m1, m2, b1, b2):
     if np.array_equal(b1, b2):  # расстояние Махаланобиса
         rho = np.matmul(np.matmul(np.transpose(np.subtract(m2, m1)), np.linalg.inv(b1)), np.subtract(m2, m1))
     else:  # расстояние Бхатачария
-        rho = (1 / 4) * np.matmul(np.matmul(np.transpose(np.subtract(m2, m1)), np.linalg.inv((b1 + b2) / 2)), np.subtract(m2, m1))
+        rho = (1 / 4) * np.matmul(np.matmul(np.transpose(np.subtract(m2, m1)), np.linalg.inv((b1 + b2) / 2)),
+                                  np.subtract(m2, m1))
         + (1 / 2) * np.log(np.linalg.det((b1 + b2) / 2) / np.sqrt(np.linalg.det(b1) * np.linalg.det(b2)))
     return rho
 
 
 def main():
     N = 200
-    size = (2, 1)
     m1 = [[0], [-2]]
     m2 = [[-1], [1]]
     m3 = [[2], [0]]
@@ -65,8 +65,8 @@ def main():
     b = np.array(([0.5, -0.2], [-0.2, 0.5]))
     a = generate_a(b)
 
-    dataset1 = generate_dataset(a, m1, size, N)
-    dataset2 = generate_dataset(a, m2, size, N)
+    dataset1 = generate_dataset(a, m1, N)
+    dataset2 = generate_dataset(a, m2, N)
 
     np.save("task_1_dataset_1", dataset1)
     np.save("task_1_dataset_2", dataset2)
@@ -79,9 +79,8 @@ def main():
     print(f'Мера близости распределений (расстояние Махаланобиса):\n{rho}')
 
     fig = plt.figure()
-    plt.plot(dataset1[0, :, :], dataset1[1, :, :], color='red', marker = '.')
-    plt.plot(dataset2[0, :, :], dataset2[1, :, :], color='green', marker = '+')
-    show()
+    plt.plot(dataset1[0, :, :], dataset1[1, :, :], color='red', marker='.')
+    plt.plot(dataset2[0, :, :], dataset2[1, :, :], color='green', marker='+')
 
     print('\n')
 
@@ -94,9 +93,9 @@ def main():
     a2 = generate_a(b2)
     a3 = generate_a(b3)
 
-    dataset1 = generate_dataset(a1, m1, size, N)
-    dataset2 = generate_dataset(a2, m2, size, N)
-    dataset3 = generate_dataset(a3, m3, size, N)
+    dataset1 = generate_dataset(a1, m1, N)
+    dataset2 = generate_dataset(a2, m2, N)
+    dataset3 = generate_dataset(a3, m3, N)
 
     np.save("task_2_dataset_1", dataset1)
     np.save("task_2_dataset_2", dataset2)
@@ -120,5 +119,6 @@ def main():
     plt.plot(dataset2[0, :, :], dataset2[1, :, :], color='green', marker='+')
     plt.plot(dataset3[0, :, :], dataset3[1, :, :], color='blue', marker='x')
     show()
+
 
 main()
