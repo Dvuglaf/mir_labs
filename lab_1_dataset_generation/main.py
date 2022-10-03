@@ -89,7 +89,7 @@ if __name__ == "__main__":
     rho13 = parameters.get_rho(m1, m3, b1, b3)
     print(f'Мера близости распределений 1 и 3 (расстояние Бхатачария):\n{rho13}')
     rho23 = parameters.get_rho(m2, m3, b2, b3)
-    print(f'Мера близости распределений 2 и 3 (расстояние Бхатачария):\n{rho23}')
+    print(f'Мера близости распределений 2 и 3 (расстояние Бхатачария):\n{rho23}') 
 
     plt.figure()
     plt.plot(dataset1[0, :, :], dataset1[1, :, :], color='red', marker='.')
