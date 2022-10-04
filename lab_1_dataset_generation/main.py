@@ -1,10 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage.io import show
-import parameters
+from lab_1_dataset_generation import parameters
 
 
-def generate_normal():  # из равномерного в нормальное
+# Генерация случайного нормального распределенного вектора
+def generate_normal():
     n = 100
     mu = 1 / 2
     sigma = np.sqrt(1 / 12)
