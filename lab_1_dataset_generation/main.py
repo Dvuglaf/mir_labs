@@ -71,7 +71,7 @@ if __name__ == "__main__":
     b2 = np.array(([0.4, 0.1], [0.1, 0.6]))
     b3 = np.array(([0.6, -0.2], [-0.2, 0.6]))
 
-    dataset1 = generate_dataset(b1, m1, N)
+    dataset1 = generate_dataset(b1, m1, N) 
     dataset2 = generate_dataset(b2, m2, N)
     dataset3 = generate_dataset(b3, m3, N)
 
