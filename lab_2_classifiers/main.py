@@ -38,9 +38,9 @@ def inv_phi_laplace(x):
 # Байесовская решающая граница для двух классов
 def bayes_border(y, p0, p1, b0, b1, m0, m1):
     g = np.linalg.det(b0) * np.linalg.det(b1)
-    d = 1 / g * (np.linalg.det(b1) * (m0[0] * b0[1][1] - m0[1] * b0[1][0])
+    d = 2 / g * (np.linalg.det(b1) * (m0[0] * b0[1][1] - m0[1] * b0[1][0])
                  - np.linalg.det(b0) * (m1[0] * b1[1][1] - m1[1] * b1[1][0]))
-    e = 1 / g * (np.linalg.det(b1) * (m0[1] * b0[0][0] - m0[0] * b0[0][1])
+    e = 2 / g * (np.linalg.det(b1) * (m0[1] * b0[0][0] - m0[0] * b0[0][1])
                  - np.linalg.det(b0) * (m1[1] * b1[0][0] - m1[0] * b1[0][1]))
     f = np.log(np.linalg.det(b0) / np.linalg.det(b1)) + 2 * np.log(p0 / p1) \
         - np.matmul(np.matmul(np.transpose(m0), np.linalg.inv(b0)), m0) \
@@ -60,9 +60,34 @@ def bayes_border(y, p0, p1, b0, b1, m0, m1):
         return x
 
 
+def bayes_border_fixed(y, p0, p1, b0, b1, m0, m1):
+    A = np.linalg.inv(b1) - np.linalg.inv(b0)
+    B = 2 * (np.matmul(np.transpose(m0), np.linalg.inv(b0)) - np.matmul(np.transpose(m1), np.linalg.inv(b1)))
+    C = np.log(np.linalg.det(b0) / np.linalg.det(b1)) + 2 * np.log(p0 / p1) \
+        - np.matmul(np.matmul(np.transpose(m0), np.linalg.inv(b0)), m0) \
+        + np.matmul(np.matmul(np.transpose(m1), np.linalg.inv(b1)), m1)
+
+    d = B[0][0]
+    e = B[0][1]
+    f = C[0][0]
+
+    if not np.array_equal(b0, b1):
+        a = A[0][0]
+        b = A[0][1] + A[1][0]
+        c = A[1][1]
+
+        x0 = ((-b * y - d) + np.sqrt((b * y + d) ** 2 - 4 * a * (c * y ** 2 + f + e * y))) / (2 * a)
+        x1 = ((-b * y - d) - np.sqrt((b * y + d) ** 2 - 4 * a * (c * y ** 2 + f + e * y))) / (2 * a)
+
+        return x0, x1
+    else:
+        x = -1 / d * (e * y + f)
+        return x
+
+
 # Решающая функция Байесовского классификатора
 def bayes_discriminant(x, p, m, b) -> float:
-    return np.log(p) - np.log(np.linalg.det(b)) - get_rho(m, x, b, b)  # расстояние Махаланобиса
+    return np.log(p) - 0.5 * np.log(np.linalg.det(b)) - get_rho(m, x, b, b)  # расстояние Махаланобиса
 
 
 # Байесовский классификатор (попарное сравнение)
@@ -95,7 +120,7 @@ def minmax_get_p(c) -> (float, float):
 # @return - координата x
 def minmax_border(y, b, c, m0, m1):
     p0, p1 = minmax_get_p(c)
-    return bayes_border(y, p0, p1, b, b, m0, m1)
+    return bayes_border_fixed(y, p0, p1, b, b, m0, m1)
 
 
 # Решающая граница Неймана-Пирсона
@@ -151,7 +176,7 @@ def task_1(dataset_1, dataset_2, b, c, m0, m1):
 
     y = np.arange(-4, 4, 0.1)
 
-    x = bayes_border(y, p, p, b, b, m0, m1)
+    x = bayes_border_fixed(y, p, p, b, b, m0, m1)
     x = np.reshape(x, y.shape)
 
     plt.figure()
@@ -206,17 +231,17 @@ def task_3(dataset_1, dataset_2, dataset_3, b0, b1, b2, m0, m1, m2, N):
     p = 1 / 3
 
     # Границы получены из исходных графиков, путем нахождения координат окрестности пересечения
-    y13 = np.arange(-4, -0.29, 0.1)
-    y12 = np.arange(-4, -0.29, 0.1)
-    y23 = np.arange(-0.32, 4, 0.1)
+    y13 = np.arange(-4, -0.1, 0.1)
+    y12 = np.arange(-4, -0.1, 0.1)
+    y23 = np.arange(-0.2, 4, 0.1)
 
-    _, x02 = bayes_border(y13, p, p, b0, b2, m0, m2)
+    _, x02 = bayes_border_fixed(y13, p, p, b0, b2, m0, m2)
     x02 = np.reshape(x02, y13.shape)
 
-    x01, _ = bayes_border(y12, p, p, b0, b1, m0, m1)
+    x01, _ = bayes_border_fixed(y12, p, p, b0, b1, m0, m1)
     x01 = np.reshape(x01, y12.shape)
 
-    _, x12 = bayes_border(y23, p, p, b1, b2, m1, m2)
+    _, x12 = bayes_border_fixed(y23, p, p, b1, b2, m1, m2)
     x12 = np.reshape(x12, y23.shape)
 
     plt.figure()
@@ -227,6 +252,7 @@ def task_3(dataset_1, dataset_2, dataset_3, b0, b1, b2, m0, m1, m2, N):
     plt.plot(x02, y13, color='cyan')
     plt.plot(x01, y12, color='magenta')
     plt.plot(x12, y23, color='yellow')
+
     plt.xlim(left=-4, right=4)
     plt.ylim(bottom=-4, top=4)
 
@@ -239,11 +265,11 @@ def task_3(dataset_1, dataset_2, dataset_3, b0, b1, b2, m0, m1, m2, N):
     print(f"\t\te_0_2 = {e_error02}")
     if e_error02 > 0.05:
         print("\tНеобходимо увеличить объем выборки для уменьшения относительной погрешности")
-        new_N = 40000
-        new_dataset = generate_dataset(b0, m0, new_N)
-        p02 = classification_error(new_dataset, p, p, b0, b2, m0, m2, new_N)
-        e_error02 = get_e(p02, new_N)
-        print(f"\tПри N = {new_N}:")
+        new_n = 40000
+        new_dataset = generate_dataset(b0, m0, new_n)
+        p02 = classification_error(new_dataset, p, p, b0, b2, m0, m2, new_n)
+        e_error02 = get_e(p02, new_n)
+        print(f"\tПри N = {new_n}:")
         print(f"\t\tp_0_2 = {p02}")
         print(f"\t\te_0_2 = {e_error02}")
 
@@ -256,18 +282,19 @@ def main():
     m2 = np.array(([2], [0]))
 
     b = np.array(([0.5, -0.2], [-0.2, 0.5]))  # случай равных корреляционных матриц
+
     b0 = np.array(([0.5, 0], [0, 0.5]))
     b1 = np.array(([0.4, 0.1], [0.1, 0.6]))
     b2 = np.array(([0.6, -0.2], [-0.2, 0.6]))
 
     c = np.array(([0, 1], [1, 0]))  # простейшая матрица штрафов
 
-    dataset_1_1 = np.load("../lab_1_dataset_generation/dataset_1_1.npy")
-    dataset_1_2 = np.load("../lab_1_dataset_generation/dataset_1_2.npy")
+    dataset_1_1 = np.load("../lab_1_dataset_generation/task_1_dataset_1.npy")
+    dataset_1_2 = np.load("../lab_1_dataset_generation/task_1_dataset_2.npy")
 
-    dataset_2_1 = np.load("../lab_1_dataset_generation/dataset_2_1.npy")
-    dataset_2_2 = np.load("../lab_1_dataset_generation/dataset_2_2.npy")
-    dataset_2_3 = np.load("../lab_1_dataset_generation/dataset_2_3.npy")
+    dataset_2_1 = np.load("../lab_1_dataset_generation/task_2_dataset_1.npy")
+    dataset_2_2 = np.load("../lab_1_dataset_generation/task_2_dataset_2.npy")
+    dataset_2_3 = np.load("../lab_1_dataset_generation/task_2_dataset_3.npy")
 
     task_1(dataset_1_1, dataset_1_2, b, c, m0, m1)
     task_2(dataset_1_1, dataset_1_2, c, b, m0, m1)
