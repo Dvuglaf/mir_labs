@@ -1,7 +1,40 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage.io import show
-from lab_1_dataset_generation import parameters
+
+
+# Оценка параметров выборки
+def evaluate_parameters(dataset, N):
+    m = np.sum(dataset, axis=2) / N
+    b = 0
+    for i in range(N):
+        b += np.matmul(
+            (dataset[:, :, i] - m),
+            np.transpose(dataset[:, :, i] - m)
+            )
+    b /= (N - 1)
+    return m, b
+
+
+# Мера близости распределений
+def get_rho(m1, m2, b1, b2) -> float:
+    rho = 0
+    if np.array_equal(b1, b2):  # расстояние Махаланобиса
+        rho = np.matmul(
+            np.matmul(np.transpose(np.subtract(m2, m1)), np.linalg.inv(b1)),
+            np.subtract(m2, m1)
+            )
+    else:  # расстояние Бхатачария
+        rho = (1 / 4) * np.matmul(np.matmul(
+                np.transpose(np.subtract(m2, m1)),
+                np.linalg.inv((b1 + b2) / 2)),
+            np.subtract(m2, m1)
+            )
+        + (1 / 2) * np.log(
+            np.linalg.det((b1 + b2) / 2) /
+            np.sqrt(np.linalg.det(b1) * np.linalg.det(b2))
+        )
+    return rho[0][0]  # to number
 
 
 # Генерация случайного нормального распределенного вектора
@@ -53,11 +86,13 @@ if __name__ == "__main__":
     np.save("task_1_dataset_1", dataset1)
     np.save("task_1_dataset_2", dataset2)
 
-    m1_exp, b1_exp = parameters.evaluate_parameters(dataset1, N)
-    m2_exp, b2_exp = parameters.evaluate_parameters(dataset2, N)
-    print(f'Матожидание 1й выборки:\n{m1_exp}\nКорреляционная матрица 1й выборки:\n{b1_exp}')
-    print(f'Матожидание 2й выборки:\n{m2_exp}\nКорреляционная матрица 2й выборки:\n{b2_exp}')
-    rho = parameters.get_rho(m1, m2, b, b)
+    m1_exp, b1_exp = evaluate_parameters(dataset1, N)
+    m2_exp, b2_exp = evaluate_parameters(dataset2, N)
+    print(f'Матожидание 1й выборки:\n{m1_exp}\n \
+        Корреляционная матрица 1й выборки:\n{b1_exp}')
+    print(f'Матожидание 2й выборки:\n{m2_exp}\n \
+        Корреляционная матрица 2й выборки:\n{b2_exp}')
+    rho = get_rho(m1, m2, b, b)
     print(f'Мера близости распределений (расстояние Махаланобиса):\n{rho}')
 
     fig = plt.figure()
@@ -71,7 +106,7 @@ if __name__ == "__main__":
     b2 = np.array(([0.4, 0.1], [0.1, 0.6]))
     b3 = np.array(([0.6, -0.2], [-0.2, 0.6]))
 
-    dataset1 = generate_dataset(b1, m1, N) 
+    dataset1 = generate_dataset(b1, m1, N)
     dataset2 = generate_dataset(b2, m2, N)
     dataset3 = generate_dataset(b3, m3, N)
 
@@ -79,18 +114,21 @@ if __name__ == "__main__":
     np.save("task_2_dataset_2", dataset2)
     np.save("task_2_dataset_3", dataset3)
 
-    m1_exp, b1_exp = parameters.evaluate_parameters(dataset1, N)
-    m2_exp, b2_exp = parameters.evaluate_parameters(dataset2, N)
-    m3_exp, b3_exp = parameters.evaluate_parameters(dataset3, N)
-    print(f'Матожидание 1й выборки:\n{m1_exp}\nКорреляционная матрица 1й выборки:\n{b1_exp}')
-    print(f'Матожидание 2й выборки:\n{m2_exp}\nКорреляционная матрица 2й выборки:\n{b2_exp}')
-    print(f'Матожидание 3й выборки:\n{m3_exp}\nКорреляционная матрица 3й выборки:\n{b3_exp}')
-    rho12 = parameters.get_rho(m1, m2, b1, b2)
-    print(f'Мера близости распределений 1 и 2 (расстояние Бхатачария):\n{rho12}')
-    rho13 = parameters.get_rho(m1, m3, b1, b3)
-    print(f'Мера близости распределений 1 и 3 (расстояние Бхатачария):\n{rho13}')
-    rho23 = parameters.get_rho(m2, m3, b2, b3)
-    print(f'Мера близости распределений 2 и 3 (расстояние Бхатачария):\n{rho23}') 
+    m1_exp, b1_exp = evaluate_parameters(dataset1, N)
+    m2_exp, b2_exp = evaluate_parameters(dataset2, N)
+    m3_exp, b3_exp = evaluate_parameters(dataset3, N)
+    print(f'Матожидание 1й выборки:\n{m1_exp}\n \
+        Корреляционная матрица 1й выборки:\n{b1_exp}')
+    print(f'Матожидание 2й выборки:\n{m2_exp}\n \
+        Корреляционная матрица 2й выборки:\n{b2_exp}')
+    print(f'Матожидание 3й выборки:\n{m3_exp}\n \
+        Корреляционная матрица 3й выборки:\n{b3_exp}')
+    rho12 = get_rho(m1, m2, b1, b2)
+    print(f'Мера близости распределений 1 и 2 (расстояние Бхатачария):{rho12}')
+    rho13 = get_rho(m1, m3, b1, b3)
+    print(f'Мера близости распределений 1 и 3 (расстояние Бхатачария):{rho13}')
+    rho23 = get_rho(m2, m3, b2, b3)
+    print(f'Мера близости распределений 2 и 3 (расстояние Бхатачария):{rho23}')
 
     plt.figure()
     plt.plot(dataset1[0, :, :], dataset1[1, :, :], color='red', marker='.')
