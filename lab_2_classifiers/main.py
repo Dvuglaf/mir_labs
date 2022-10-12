@@ -1,10 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage.io import show
-from lab_1_dataset_generation.parameters import get_rho
-from lab_1_dataset_generation.main import generate_dataset
 from scipy.special import erf, erfinv
 import warnings
+import sys
+
+sys.path.append("../")
+
+from lab_1_dataset_generation.main import get_rho, generate_dataset
 
 
 warnings.filterwarnings("ignore")  # runtime warning disable
@@ -17,7 +20,7 @@ warnings.filterwarnings("ignore")  # runtime warning disable
 '''
 '''
 Обозначения:
-    p -     априорные вероятности 
+    p -     априорные вероятности
     c -     матрица штрафов
     d -     решающая функция классификатора
     rho -   мера близости (расстояние Махаланобиса)
@@ -100,7 +103,7 @@ def bayes_classificator(x, p0, p1, b0, b1, m0, m1) -> int:
 
 
 # Вероятности ошибочной классификации для Байесовского классификатора
-def bayes_error(p0, p1, m0, m1, b0, b1, c) -> (float, float):
+def bayes_error(p0, p1, m0, m1, b0, b1, c):
     _lambda = (p0 * (c[0][1] - c[0][0])) / (p1 * (c[1][0] - c[1][1]))
     rho = get_rho(m0, m1, b0, b1)
 
@@ -111,7 +114,7 @@ def bayes_error(p0, p1, m0, m1, b0, b1, c) -> (float, float):
 
 
 # Поиск априорной вероятности в общем случае для минимаксного классификатора (любая матрица штрафов)
-def minmax_get_p(c) -> (float, float):
+def minmax_get_p(c):
     p0 = (c[1][0] - c[1][1]) / (c[0][1] - c[0][0] + c[1][0] - c[1][1])
     return p0, 1 - p0
 
@@ -190,7 +193,7 @@ def task_1(dataset_1, dataset_2, b, c, m0, m1):
     errors = bayes_error(p, p, m0, m1, b, b, c)
 
     print("Задание 1 (Байесовский классификатор p0 = p1 и b0 = b1):")
-    print(f"\tВероятности ошибочной классификации:")
+    print("\tВероятности ошибочной классификации:")
     print(f"\t\tp_0_1 = {errors[0]}")
     print(f"\t\tp_1_0 = {errors[1]}")
     print(f"\tСуммарная вероятность ошибочной классификации: {errors[0] + errors[1]}\n")
@@ -260,7 +263,7 @@ def task_3(dataset_1, dataset_2, dataset_3, b0, b1, b2, m0, m1, m2, N):
     print("Задание 3 (Байесовский классификатор p0 = p1 = p2 и неравных b):")
     p02 = classification_error(dataset_1, p, p, b0, b2, m0, m2, N)
     e_error02 = get_e(p02, N)
-    print(f"\tОценка вероятности ошибочной классификации и погрешность для классов 0 и 2:")
+    print("\tОценка вероятности ошибочной классификации и погрешность для классов 0 и 2:")
     print(f"\t\tp_0_2 = {p02}")
     print(f"\t\te_0_2 = {e_error02}")
     if e_error02 > 0.05:
