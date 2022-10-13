@@ -35,16 +35,16 @@ def phi_laplace(x):
 
 
 def inv_phi_laplace(x):
-    return np.sqrt(2) * erfinv(2 * x-1)
+    return np.sqrt(2) * erfinv(2 * x - 1)
 
 
 # Байесовская решающая граница для двух классов
 def bayes_border(y, p0, p1, b0, b1, m0, m1):
     g = np.linalg.det(b0) * np.linalg.det(b1)
-    d = 2 / g * (np.linalg.det(b1) * (m0[0] * b0[1][1] - m0[1] * b0[1][0])
-                 - np.linalg.det(b0) * (m1[0] * b1[1][1] - m1[1] * b1[1][0]))
-    e = 2 / g * (np.linalg.det(b1) * (m0[1] * b0[0][0] - m0[0] * b0[0][1])
-                 - np.linalg.det(b0) * (m1[1] * b1[0][0] - m1[0] * b1[0][1]))
+    d = 2 / g * (np.linalg.det(b1) * (m0[0] * b0[1][1] - m0[1] * b0[1][0]) - \
+                 np.linalg.det(b0) * (m1[0] * b1[1][1] - m1[1] * b1[1][0]))
+    e = 2 / g * (np.linalg.det(b1) * (m0[1] * b0[0][0] - m0[0] * b0[0][1]) - \
+                 np.linalg.det(b0) * (m1[1] * b1[0][0] - m1[0] * b1[0][1]))
     f = np.log(np.linalg.det(b0) / np.linalg.det(b1)) + 2 * np.log(p0 / p1) \
         - np.matmul(np.matmul(np.transpose(m0), np.linalg.inv(b0)), m0) \
         + np.matmul(np.matmul(np.transpose(m1), np.linalg.inv(b1)), m1)
@@ -133,7 +133,7 @@ def neyman_pearson_border(y, b, m0, m1, p):
     e = 1 / (2 * np.linalg.det(b))
     a = e * ((b[0][1] + b[1][0]) * (m0[1] - m1[1]) - 2 * b[1][1] * (m0[0] - m1[0]))
     c = e * ((b[0][1] + b[1][0]) * (m0[0] - m1[0]) - 2 * b[0][0] * (m0[1] - m1[1]))
-    d = e * (b[0][0] * (m0[1] ** 2 - m1[1] ** 2) - (b[0][1] + b[1][0]) * (m0[0] * m0[1] - m1[0] * m1[1]) +
+    d = e * (b[0][0] * (m0[1] ** 2 - m1[1] ** 2) - (b[0][1] + b[1][0]) * (m0[0] * m0[1] - m1[0] * m1[1]) + \
              b[1][1] * (m0[0] ** 2 - m1[0] ** 2)) + 1 / 2 * rho - np.sqrt(rho) * inv_phi_laplace(1 - p)
 
     return -1 / a * (c * y + d)
