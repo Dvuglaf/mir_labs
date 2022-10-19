@@ -88,18 +88,17 @@ if __name__ == "__main__":
 
     m1_exp, b1_exp = evaluate_parameters(dataset1, N)
     m2_exp, b2_exp = evaluate_parameters(dataset2, N)
-    print(f'Матожидание 1й выборки:\n{m1_exp}\n \
-        Корреляционная матрица 1й выборки:\n{b1_exp}')
-    print(f'Матожидание 2й выборки:\n{m2_exp}\n \
-        Корреляционная матрица 2й выборки:\n{b2_exp}')
+    print("Задание 1:")
+    print(f'Матожидание 1й выборки:\n{m1_exp}\nКорреляционная матрица 1й выборки:\n{b1_exp}')
+    print(f'Матожидание 2й выборки:\n{m2_exp}\nКорреляционная матрица 2й выборки:\n{b2_exp}')
     rho = get_rho(m1, m2, b, b)
-    print(f'Мера близости распределений (расстояние Махаланобиса):\n{rho}')
+    print(f'Мера близости распределений (расстояние Махаланобиса): {rho}')
 
     fig = plt.figure()
     plt.plot(dataset1[0, :, :], dataset1[1, :, :], color='red', marker='.')
     plt.plot(dataset2[0, :, :], dataset2[1, :, :], color='green', marker='+')
 
-    print('\n')
+    print('\nЗадание 2:')
 
     # три вектора с разными корреляционными матрицами
     b1 = np.array(([0.5, 0], [0, 0.5]))
@@ -117,12 +116,9 @@ if __name__ == "__main__":
     m1_exp, b1_exp = evaluate_parameters(dataset1, N)
     m2_exp, b2_exp = evaluate_parameters(dataset2, N)
     m3_exp, b3_exp = evaluate_parameters(dataset3, N)
-    print(f'Матожидание 1й выборки:\n{m1_exp}\n \
-        Корреляционная матрица 1й выборки:\n{b1_exp}')
-    print(f'Матожидание 2й выборки:\n{m2_exp}\n \
-        Корреляционная матрица 2й выборки:\n{b2_exp}')
-    print(f'Матожидание 3й выборки:\n{m3_exp}\n \
-        Корреляционная матрица 3й выборки:\n{b3_exp}')
+    print(f'Матожидание 1й выборки:\n{m1_exp}\nКорреляционная матрица 1й выборки:\n{b1_exp}')
+    print(f'Матожидание 2й выборки:\n{m2_exp}\nКорреляционная матрица 2й выборки:\n{b2_exp}')
+    print(f'Матожидание 3й выборки:\n{m3_exp}\nКорреляционная матрица 3й выборки:\n{b3_exp}')
     rho12 = get_rho(m1, m2, b1, b2)
     print(f'Мера близости распределений 1 и 2 (расстояние Бхатачария):{rho12}')
     rho13 = get_rho(m1, m3, b1, b3)
