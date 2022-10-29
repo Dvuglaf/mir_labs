@@ -71,7 +71,7 @@ def get_errors(
     sigma_0 = np.sqrt(np.sum((w_1_0 ** 2) * prob_0 * (1 - prob_0)))
     sigma_1 = np.sqrt(np.sum((w_1_0 ** 2) * prob_1 * (1 - prob_1)))
 
-    _lambda = np.log(aprior_0 / aprior_1)
+    _lambda = np.log(aprior_0 / aprior_1) + np.sum(np.log((1 - prob_0) / (1 - prob_1)))
 
     errors = [1 - phi_laplace((_lambda - m_0) / sigma_0),
               phi_laplace((_lambda - m_1) / sigma_1)]
@@ -97,14 +97,6 @@ def classification_error(
             indices_wrong_classified.append(i)
 
     return num_errors / N, np.array(indices_wrong_classified)
-
-
-# Подсчет относительной погрешности.
-def get_e(p: float, N: int) -> float:
-    try:
-        return np.sqrt((1 - p) / (N * p))
-    except ZeroDivisionError:
-        return 1.
 
 
 # Получение верно распознанных объектов.
@@ -161,8 +153,8 @@ def main():
                                 [0.3, 0.7, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3],
                                 [0.3, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.3]])
 
-    prob_u = get_probability(dataset_u)  # закон распределения (x = 1/u)
-    prob_z = get_probability(dataset_z)  # закон распределения (x = 1/z)
+    prob_u = get_probability(dataset_u)  # закон распределения P(x = 1/u)
+    prob_z = get_probability(dataset_z)  # закон распределения P(x = 1/z)
 
     errors = get_errors(aprior_u, aprior_z, prob_u, prob_z)
 
@@ -188,11 +180,13 @@ def main():
     sp.set_title("Верно классифицированный в класс Z")
     imshow(1 - get_right_classified(dataset_z, wrong_classified_z), cmap='gray')
 
+    """
     plt.figure()
     plt.title("Распределение вероятностей (X=1/OMEGA)")
     plt.plot(range(0, 81), prob_u, color='pink', label='(X=1/U)')
     plt.plot(range(0, 81), prob_z, color='blue', label='(X=1/Z)')
     plt.legend()
+    """
 
     fig = plt.figure()
     fig.add_subplot(1, 2, 1)
@@ -222,6 +216,29 @@ def main():
     sp = fig.add_subplot(1, 2, 2)
     sp.set_title("Компоненты вектора w_z_u")
     imshow(w_z_u.reshape((9, 9)), cmap='gray')
+
+    w_1_0 = np.log(prob_z * (1 - prob_u) / ((1 - prob_z) * prob_u))
+
+    m_0 = np.sum(w_1_0 * prob_u)
+    m_1 = np.sum(w_1_0 * prob_z)
+
+    sigma_0 = np.sqrt(np.sum((w_1_0 ** 2) * prob_u * (1 - prob_u)))
+    sigma_1 = np.sqrt(np.sum((w_1_0 ** 2) * prob_z * (1 - prob_z)))
+
+    _Lambda_u = np.random.normal(m_0, sigma_0 ** 2, 5000)
+    _Lambda_z = np.random.normal(m_1, sigma_1 ** 2, 5000)
+
+    hist_u, edges_u = np.histogram(_Lambda_u, bins=15)
+    hist_z, edges_z = np.histogram(_Lambda_z, bins=15)
+
+    threshold = np.ones((6, )) * get_threshold(aprior_u, aprior_z, prob_u, prob_z)
+
+    plt.figure()
+    plt.title("")
+    plt.plot(edges_u[:-1], hist_u / 5000, color='pink', linestyle='-', label='Lambda_u')
+    plt.plot(edges_z[:-1], hist_z / 5000, color='blue', linestyle='-', label='Lambda_z')
+    plt.plot(threshold, np.arange(0, 0.3, 0.05), color='red', linestyle='-')
+    plt.legend()
 
     show()
 
