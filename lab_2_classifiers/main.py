@@ -277,7 +277,7 @@ def task_3(dataset_1, dataset_2, dataset_3, b0, b1, b2, m0, m1, m2, N):
         print(f"\t\te_0_2 = {e_error02}")
 
 
-def main():
+if __name__ == "__main__":
     N = 200
 
     m0 = np.array(([0], [-2]))
@@ -303,6 +303,3 @@ def main():
     task_2(dataset_1_1, dataset_1_2, c, b, m0, m1)
     task_3(dataset_2_1, dataset_2_2, dataset_2_3, b0, b1, b2, m0, m1, m2, N)
     show()
-
-
-main()
