@@ -1,4 +1,6 @@
 /.vscode
+/.idea
+
 
 /lab_1_dataset_generation/__pycache__/
 /lab_1_dataset_generation/task_1_dataset_1.npy
@@ -8,4 +10,10 @@
 /lab_1_dataset_generation/task_2_dataset_3.npy
 
 /lab_2_classifiers/__pycache__/
+
+/lab_4_xxx/task_1_dataset_1.npy
+/lab_4_xxx/task_1_dataset_2.npy
+/lab_4_xxx/task_2_dataset_1.npy
+/lab_4_xxx/task_2_dataset_2.npy
+/lab_4_xxx/task_2_dataset_3.npy
 /venv
