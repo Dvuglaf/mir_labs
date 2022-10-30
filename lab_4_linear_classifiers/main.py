@@ -56,7 +56,7 @@ def get_Gamma(U: np.array) -> np.array:
 
 def get_W(U: np.array, Gamma: np.array) -> np.array:
     return np.matmul(
-        np.matmul(np.linalg.inv(np.matmul(U[:, :, 0], U[:, :, 0].T)), U[:, :, 0]).T,
+        np.matmul(np.linalg.inv(np.matmul(U[:, :, 0].T, U[:, :, 0])), U[:, :, 0].T),
         Gamma[:, :, 0])
 
 
@@ -79,15 +79,17 @@ def main():
     b0 = np.array(([0.5, 0], [0, 0.5]))
     b1 = np.array(([0.4, 0.1], [0.1, 0.6]))
 
-    dataset00 = np.load("task_1_dataset_1.npy")
-    dataset01 = np.load("task_1_dataset_2.npy")
-    dataset10 = np.load("task_2_dataset_1.npy")
-    dataset11 = np.load("task_2_dataset_2.npy")
+    dataset00 = np.load("../lab_1_dataset_generation/task_1_dataset_1.npy")
+    dataset01 = np.load("../lab_1_dataset_generation/task_1_dataset_2.npy")
+    dataset10 = np.load("../lab_1_dataset_generation/task_2_dataset_1.npy")
+    dataset11 = np.load("../lab_1_dataset_generation/task_2_dataset_2.npy")
+
     U = get_U(dataset00, dataset01, 40)
     G = get_Gamma(U)
     W = get_W(U, G)
     for i in range(200):
-        print(fisher_classificator(dataset00[:, :, i], m0, m1, b, b), "\t", mse_classificator(dataset00[:, :, i], W))
+        if fisher_classificator(dataset00[:, :, i], m0, m1, b, b) - mse_classificator(dataset00[:, :, i], W) != 0:
+            print(f"Mismatch: {i}")
 
 
 
