@@ -113,6 +113,39 @@ def get_W_aci(W: np.array, U: np.array, k: int, beta: float):
     return W_next
 
 
+# алгоритм корректирующих приращений с улучшениями
+def get_W_aci_boosted(W: np.array, U: np.array, k: int, beta: float):
+    ...
+
+
+def research(dataset00, dataset01, dataset10, dataset11):
+
+    # на что влияет beta (spoiler: ни на что)
+
+    W_next_equal = W_prev_equal = np.ones((3, 1))
+
+    U_length = dataset00.shape[-1] + dataset01.shape[-1]
+    U_robbins_monro_equal = get_U_robbins_monro(dataset00, dataset01, U_length)
+
+    eps = np.full((3, 1), 0.005)
+    iterations = {}
+
+    for beta in np.arange(0.5, 1, 0.05):
+        for i in range(1, U_length + 1):
+            W_next_equal = get_W_aci(W_prev_equal, U_robbins_monro_equal[i - 1: i, :, :], 1, beta)
+            diff = np.abs(W_next_equal - W_prev_equal)
+            # print(f"{beta} : {i} : {diff.T}")
+
+            if (diff < eps).any():
+                iterations.update({beta : (i, W_next_equal.T, W_prev_equal.T)})
+                break
+
+            W_prev_equal = W_next_equal
+
+    for key in iterations.keys():
+        print(f"{key} : {iterations[key]}")
+
+
 # алгоритм наименьшей СКО
 def get_W_min_mse(W: np.array, U: np.array, k: int, beta: float):
     W_prev = W_next = W
@@ -293,17 +326,18 @@ def main():
     dataset10 = np.load("../lab_1_dataset_generation/task_2_dataset_1.npy")
     dataset11 = np.load("../lab_1_dataset_generation/task_2_dataset_2.npy")
 
-    task1(m0, m1, b0, b1, b, dataset00, dataset01, dataset10, dataset11)
+    # task1(m0, m1, b0, b1, b, dataset00, dataset01, dataset10, dataset11)
+    #
+    # k = 100
+    # task2(m0, m1, b0, b1, b, dataset00, dataset01, dataset10, dataset11, k)
+    #
+    # k = 200
+    # beta = 0.7
+    # task3(m0, m1, b0, b1, b, dataset00, dataset01, dataset10, dataset11, k, beta)
+    #
+    # show()
 
-    k = 100
-    task2(m0, m1, b0, b1, b, dataset00, dataset01, dataset10, dataset11, k)
-
-    k = 300
-    beta = 0.7
-    task3(m0, m1, b0, b1, b, dataset00, dataset01, dataset10, dataset11, k, beta)
-
-
-    show()
+    research(dataset00, dataset01, dataset10, dataset11)
 
 
 main()
