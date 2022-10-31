@@ -4,15 +4,6 @@ from skimage.io import show
 from lab_2_classifiers.main import bayes_classificator, bayes_discriminant, bayes_border_fixed
 
 
-def classification_error(dataset, aprior0, aprior1, b0, b1, m0, m1, N, classificator) -> float:
-    errors = 0  # показывает число неверно определенных элементов
-
-    for i in range(N):
-        errors += classificator(dataset[:, :, i], aprior0, aprior1, b0, b1, m0, m1)
-
-    return errors / N  # ошибка первого рода
-
-
 def get_risk(aprior0: float, aprior1: float, p0: float, p1: float) -> float:
     return aprior0 * p0 + aprior1 * p1
 
@@ -64,8 +55,8 @@ def get_U_mse(dataset0: np.array, dataset1: np.array, k: int) -> np.array:
     return np.array(U)
 
 
-def get_Gamma(U: np.array) -> np.array:
-    return np.ones((U.shape[0], 1, 1))
+def get_Gamma(k: int) -> np.array:
+    return np.ones((k, 1, 1))
 
 
 def get_W_mse(U: np.array, Gamma: np.array) -> np.array:
@@ -154,6 +145,140 @@ def linear_border(y: np.array, W: np.array):
         return (-b * y - c) / a
 
 
+def plot(title: str, dataset0: np.array, dataset1: np.array, border_x_arr, border_y_arr, colors, labels):
+    plt.figure()
+    plt.title(title)
+
+    plt.plot(dataset0[0, :, :], dataset0[1, :, :], color='red', marker='.')
+    plt.plot(dataset1[0, :, :], dataset1[1, :, :], color='green', marker='+')
+
+    for i in range(len(border_x_arr)):
+        plt.plot(border_x_arr[i], border_y_arr[i], color=colors[i], label=labels[i])
+
+    plt.legend()
+
+    plt.xlim(left=-4, right=4)
+    plt.ylim(bottom=-4, top=4)
+
+
+# критерий Фишера
+def task1(m0, m1, b0, b1, b, dataset00, dataset01, dataset10, dataset11):
+    y = np.arange(-4, 4, 0.1)
+
+    borders_y = [y, y]
+
+    colors = ["black", "blue"]
+    labels = ["Фишер", "Байес"]
+
+    # равные корреляционные матрицы
+    W_fisher_equal = get_W_fisher(m0, m1, b, b)
+    fisher_equal_border_x = linear_border(y, W_fisher_equal)
+
+    bayes_equal_border_x = bayes_border_fixed(y, 0.5, 0.5, b, b, m0, m1)
+
+    borders_x = [fisher_equal_border_x, bayes_equal_border_x]
+
+    plot("Критерий Фишера, равные корреляционные матрицы", dataset00, dataset01, borders_x, borders_y, colors, labels)
+
+    # разные корреляционные матрицы
+    W_fisher = get_W_fisher(m0, m1, b0, b1)
+    fisher_border_x = linear_border(y, W_fisher)
+
+    bayes_border_x1, _ = bayes_border_fixed(y, 0.5, 0.5, b0, b1, m0, m1)
+
+    borders_x = [fisher_border_x, bayes_border_x1]
+
+    plot("Критерий Фишера, разные корреляционные матрицы", dataset10, dataset11, borders_x, borders_y, colors, labels)
+
+#     TODO: посчитать риск
+
+
+# критерий минимизации СКО
+def task2(m0, m1, b0, b1, b, dataset00, dataset01, dataset10, dataset11, k):
+    y = np.arange(-4, 4, 0.1)
+
+    borders_y = [y, y, y]
+
+    colors = ["black", "blue", "pink"]
+    labels = ["Фишер", "Байес", "СКО"]
+
+    # равные корреляционные матрицы
+    W_fisher_equal = get_W_fisher(m0, m1, b, b)
+    fisher_equal_border_x = linear_border(y, W_fisher_equal)
+
+    bayes_equal_border_x = bayes_border_fixed(y, 0.5, 0.5, b, b, m0, m1)
+
+    G = get_Gamma(k)
+    U_mse_equal = get_U_mse(dataset00, dataset01, k)
+    W_mse_equal = get_W_mse(U_mse_equal, G)
+
+    mse_equal_border_x = linear_border(y, W_mse_equal)
+
+    borders_x = [fisher_equal_border_x, bayes_equal_border_x, mse_equal_border_x]
+
+    plot("Критерий минимизации СКО, равные корреляционные матрицы", dataset00, dataset01, borders_x, borders_y, colors, labels)
+
+    # разные корреляционные матрицы
+    W_fisher = get_W_fisher(m0, m1, b0, b1)
+    fisher_border_x = linear_border(y, W_fisher)
+
+    bayes_border_x1, _ = bayes_border_fixed(y, 0.5, 0.5, b0, b1, m0, m1)
+
+    U_mse = get_U_mse(dataset10, dataset11, k)
+    W_mse = get_W_mse(U_mse, G)
+
+    mse_border_x = linear_border(y, W_mse)
+
+    borders_x = [fisher_border_x, bayes_border_x1, mse_border_x]
+
+    plot("Критерий минимизации СКО, разные корреляционные матрицы", dataset10, dataset11, borders_x, borders_y, colors, labels)
+
+#     TODO: посчитать риск
+
+
+# процедура Роббинса-Монро
+def task3(m0, m1, b0, b1, b, dataset00, dataset01, dataset10, dataset11, k, beta):
+    y = np.arange(-4, 4, 0.1)
+
+    borders_y = [y, y, y]
+
+    colors = ["black", "blue", "pink"]
+    labels = ["АКП", "Байес", "НСКО"]
+
+    # равные корреляционные матрицы
+    U_robbins_monro_equal = get_U_robbins_monro(dataset00, dataset01, k)
+    W_aci_equal = get_W_aci(np.full((3, 1), 1), U_robbins_monro_equal, k, beta)
+    aci_equal_border_x = linear_border(y, W_aci_equal)
+
+    bayes_equal_border_x = bayes_border_fixed(y, 0.5, 0.5, b, b, m0, m1)
+
+    W_min_mse_equal = get_W_min_mse(np.full((3, 1), 1), U_robbins_monro_equal, k, beta)
+    min_mse_equal_border_x = linear_border(y, W_min_mse_equal)
+
+    borders_x = [aci_equal_border_x, bayes_equal_border_x, min_mse_equal_border_x]
+
+    plot("Процедура Роббинса-Монро, равные корреляционные матрицы", dataset00, dataset01, borders_x, borders_y, colors, labels)
+
+    # разные корреляционные матрицы
+    U_robbins_monro = get_U_robbins_monro(dataset10, dataset11, k)
+    W_aci = get_W_aci(np.full((3, 1), 1), U_robbins_monro, k, beta)
+    aci_border_x = linear_border(y, W_aci)
+
+    bayes_border_x1, _ = bayes_border_fixed(y, 0.5, 0.5, b0, b1, m0, m1)
+
+    W_min_mse = get_W_min_mse(np.full((3, 1), 1), U_robbins_monro, k, beta)
+    min_mse_border_x = linear_border(y, W_min_mse)
+
+    borders_x = [aci_border_x, bayes_border_x1, min_mse_border_x]
+
+    plot("Процедура Роббинса-Монро, разные корреляционные матрицы", dataset10, dataset11, borders_x, borders_y, colors, labels)
+
+# TODO: посчитать риск, Исследовать
+# TODO: зависимость скорости сходимости итерационного процесса и качества
+# TODO: классификации от выбора начальных условий и выбора последовательности
+# TODO: корректирующих коэффициентов.
+
+
 def main():
     m0 = np.array([[0], [-2]])
     m1 = np.array([[-1], [1]])
@@ -168,62 +293,14 @@ def main():
     dataset10 = np.load("../lab_1_dataset_generation/task_2_dataset_1.npy")
     dataset11 = np.load("../lab_1_dataset_generation/task_2_dataset_2.npy")
 
-    y = np.arange(-4, 4, 0.1)
-    W_fisher = get_W_fisher(m0, m1, b0, b1)
-    print(f"Fisher : y = {-W_fisher[0] / W_fisher[1]} * x + {-W_fisher[2] / W_fisher[1]}")
-    fisher_border_x = linear_border(y, W_fisher)
+    task1(m0, m1, b0, b1, b, dataset00, dataset01, dataset10, dataset11)
 
-    plt.figure()
-    plt.title("Fisher border")
-    plt.plot(dataset10[0, :, :], dataset10[1, :, :], color='red', marker='.')
-    plt.plot(dataset11[0, :, :], dataset11[1, :, :], color='green', marker='+')
-    plt.plot(fisher_border_x, y, color='black')
-    plt.xlim(left=-4, right=4)
-    plt.ylim(bottom=-4, top=4)
-
-    k = 200
-    U_mse = get_U_mse(dataset10, dataset11, k)
-    G = get_Gamma(U_mse)
-    W_mse = get_W_mse(U_mse, G)
-    print(f"mse : y = {-W_mse[0] / W_mse[1]} * x + {-W_mse[2] / W_mse[1]}")
-    mse_border_x = linear_border(y, W_mse)
-
-    plt.figure()
-    plt.title("mse border")
-    plt.plot(dataset10[0, :, :], dataset10[1, :, :], color='red', marker='.')
-    plt.plot(dataset11[0, :, :], dataset11[1, :, :], color='green', marker='+')
-    plt.plot(mse_border_x, y, color='black')
-    plt.xlim(left=-4, right=4)
-    plt.ylim(bottom=-4, top=4)
-
-    beta = 0.7
     k = 100
-    U_robbins_monro = get_U_robbins_monro(dataset10, dataset11, k)
-    W_aci = get_W_aci(np.full((3, 1), 1), U_robbins_monro, k, beta)
-    print(f"aci : y = {-W_aci[0] / W_aci[1]} * x + {-W_aci[2] / W_aci[1]}")
-    aci_border_x = linear_border(y, W_aci)
+    task2(m0, m1, b0, b1, b, dataset00, dataset01, dataset10, dataset11, k)
 
-    plt.figure()
-    plt.title("aci border")
-    plt.plot(dataset10[0, :, :], dataset10[1, :, :], color='red', marker='.')
-    plt.plot(dataset11[0, :, :], dataset11[1, :, :], color='green', marker='+')
-    plt.plot(aci_border_x, y, color='black')
-    plt.xlim(left=-4, right=4)
-    plt.ylim(bottom=-4, top=4)
-
-    k = 200
-    U_robbins_monro = get_U_robbins_monro(dataset10, dataset11, k)
-    W_min_mse = get_W_min_mse(np.full((3, 1), 1), U_robbins_monro, k, beta)
-    print(f"min mse : y = {-W_min_mse[0] / W_min_mse[1]} * x + {-W_min_mse[2] / W_min_mse[1]}")
-    min_mse_border_x = linear_border(y, W_min_mse)
-
-    plt.figure()
-    plt.title("min mse border")
-    plt.plot(dataset10[0, :, :], dataset10[1, :, :], color='red', marker='.')
-    plt.plot(dataset11[0, :, :], dataset11[1, :, :], color='green', marker='+')
-    plt.plot(min_mse_border_x, y, color='black')
-    plt.xlim(left=-4, right=4)
-    plt.ylim(bottom=-4, top=4)
+    k = 300
+    beta = 0.7
+    task3(m0, m1, b0, b1, b, dataset00, dataset01, dataset10, dataset11, k, beta)
 
 
     show()
