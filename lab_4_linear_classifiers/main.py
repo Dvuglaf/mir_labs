@@ -1,14 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage.io import show
-from lab_2_classifiers.main import bayes_classificator, bayes_discriminant, bayes_border_fixed
+from lab_2_classifiers.main import bayes_border_fixed
 from lab_2_classifiers.main import classification_error as bayes_error
 
 
-# def get_risk(aprior0: float, aprior1: float, p0: float, p1: float) -> float:
-#     return aprior0 * p0 + aprior1 * p1
-
-
+# добавление значения в вектор столбец
 def expand(x: np.array, value):
     return np.append(x, np.array([[value]]), axis=0)
 
@@ -24,15 +21,15 @@ def get_sigma(W: np.array, b: np.array):
 
 
 def get_w_n(m0: np.array, m1: np.array, b0: np.array, b1: np.array, W: np.array):
-    sigma_0_s = get_sigma(W, b0)
-    sigma_1_s = get_sigma(W, b1)
+    sigma_0_s = get_sigma(W, b0)  # уже в квадрате
+    sigma_1_s = get_sigma(W, b1)  # уже в квадрате
     return (- np.matmul(
         (np.matmul((m1 - m0).T, np.linalg.inv(0.5 * (b1 + b0)))),
         (sigma_1_s * m0 + sigma_0_s * m1)) / (sigma_1_s + sigma_0_s))[0, 0]
 
 
 def get_U_mse(dataset0: np.array, dataset1: np.array, k: int) -> np.array:
-    U = []
+    U = []  # U = (z_1, ... z_k)
 
     for i in range(k // 2):
         U.append(-dataset0[:, :, i])
@@ -45,7 +42,7 @@ def get_U_mse(dataset0: np.array, dataset1: np.array, k: int) -> np.array:
 
 
 def get_Gamma(k: int) -> np.array:
-    return np.ones((k, 1, 1))
+    return np.ones((k, 1, 1))  # Г = (g(z_1), ..., g(z_k)).T
 
 
 def get_W_mse(U: np.array, Gamma: np.array) -> np.array:
@@ -94,7 +91,7 @@ def get_W_aci(W: np.array, U: np.array, k: int, beta: float):
     return W_next
 
 
-# алгоритм корректирующих приращений с улучшениями
+# алгоритм корректирующих приращений с улучшениями (2 правило)
 def get_W_aci_boosted(W: np.array, U: np.array, k: int, beta: float):
     W_prev = W_next = W
 
@@ -135,7 +132,7 @@ def get_W_min_mse(W: np.array, U: np.array, k: int, beta: float):
     return W_next
 
 
-# алгоритм наименьшей СКО с улучшениями
+# алгоритм наименьшей СКО с улучшениями (2 правило)
 def get_W_min_mse_boosted(W: np.array, U: np.array, k: int, beta: float):
     W_prev = W_next = W
 
@@ -243,7 +240,6 @@ def task1(m0, m1, b0, b1, b, dataset00, dataset01, dataset10, dataset11):
 
     print(f"Вероятности ошибок классификатора (критерий Фишера) при равных корреляционных матрицах:"
           f"\np0={fisher_error_p0}\np1={fisher_error_p1}")
-
 
     # разные корреляционные матрицы
     W_fisher = get_W_fisher(m0, m1, b0, b1)
