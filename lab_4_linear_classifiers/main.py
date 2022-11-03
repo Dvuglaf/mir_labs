@@ -80,13 +80,16 @@ def r(x: np.array):
 
 
 # алгоритм корректирующих приращений
-def get_W_aci(W: np.array, U: np.array, k: int, beta: float):
+def get_W_aci(W: np.array, U: np.array, size: int, beta: float, k: int):
     W_prev = W_next = W
 
-    for i in range(1, k + 1):
+    j = k
+
+    for i in range(1, size + 1):
         x_i = U[i - 1, :, :]
 
-        alpha_i = get_alpha(i, beta)
+        alpha_i = get_alpha(j, beta)
+        j += 1
 
         W_next = W_prev + alpha_i * x_i[:-1] * np.sign(r(x_i) - np.matmul(W_prev.T, x_i[:-1]))
         W_prev = W_next
@@ -95,15 +98,15 @@ def get_W_aci(W: np.array, U: np.array, k: int, beta: float):
 
 
 # алгоритм корректирующих приращений с улучшениями
-def get_W_aci_boosted(W: np.array, U: np.array, k: int, beta: float):
+def get_W_aci_boosted(W: np.array, U: np.array, size: int, beta: float, k: int):
     W_prev = W_next = W
 
     prev_sign = 0.
 
-    j = 1
+    j = k
     alpha_j = 1.
 
-    for i in range(1, k + 1):
+    for i in range(1, size + 1):
         x_i = U[i - 1, :, :]
 
         if np.sign(r(x_i)) != np.sign(np.matmul(W_prev.T, x_i[:-1])):
@@ -123,12 +126,15 @@ def get_W_aci_boosted(W: np.array, U: np.array, k: int, beta: float):
 
 
 # алгоритм наименьшей СКО
-def get_W_min_mse(W: np.array, U: np.array, k: int, beta: float):
+def get_W_min_mse(W: np.array, U: np.array, size: int, beta: float, k: int):
     W_prev = W_next = W
 
-    for i in range(1, k + 1):
+    j = k
+
+    for i in range(1, size + 1):
         x_i = U[i - 1, :, :]
-        alpha_i = get_alpha(i, beta)
+        alpha_i = get_alpha(j, beta)
+        j += 1
         W_next = W_prev + alpha_i * x_i[:-1] * (r(x_i) - np.matmul(W_prev.T, x_i[:-1]))
         W_prev = W_next
 
@@ -136,15 +142,15 @@ def get_W_min_mse(W: np.array, U: np.array, k: int, beta: float):
 
 
 # алгоритм наименьшей СКО с улучшениями
-def get_W_min_mse_boosted(W: np.array, U: np.array, k: int, beta: float):
+def get_W_min_mse_boosted(W: np.array, U: np.array, size: int, beta: float, k: int):
     W_prev = W_next = W
 
     prev_sign = 0.
 
-    j = 1
+    j = k
     alpha_j = 1.
 
-    for i in range(1, k + 1):
+    for i in range(1, size + 1):
         x_i = U[i - 1, :, :]
 
         if np.sign(r(x_i)) != np.sign(np.matmul(W_prev.T, x_i[:-1])):
@@ -363,18 +369,18 @@ def task3(m0, m1, b0, b1, b, dataset00, dataset01, dataset10, dataset11, k, beta
 
     # равные корреляционные матрицы
     U_robbins_monro_equal = get_U_robbins_monro(dataset00, dataset01, k)
-    W_aci_equal = get_W_aci(np.full((3, 1), 1), U_robbins_monro_equal, k, beta)
+    W_aci_equal = get_W_aci(np.full((3, 1), 1), U_robbins_monro_equal, k, beta, 1)
     aci_equal_border_x = linear_border(y, W_aci_equal)
 
-    W_aci_equal_boosted = get_W_aci_boosted(np.full((3, 1), 1), U_robbins_monro_equal, k, beta)
+    W_aci_equal_boosted = get_W_aci_boosted(np.full((3, 1), 1), U_robbins_monro_equal, k, beta, 1)
     aci_equal_boosted_border_x = linear_border(y, W_aci_equal_boosted)
 
     bayes_equal_border_x = bayes_border_fixed(y, 0.5, 0.5, b, b, m0, m1)
 
-    W_min_mse_equal = get_W_min_mse(np.full((3, 1), 1), U_robbins_monro_equal, k, beta)
+    W_min_mse_equal = get_W_min_mse(np.full((3, 1), 1), U_robbins_monro_equal, k, beta, 1)
     min_mse_equal_border_x = linear_border(y, W_min_mse_equal)
 
-    W_min_mse_equal_boosted = get_W_min_mse_boosted(np.full((3, 1), 1), U_robbins_monro_equal, k, beta)
+    W_min_mse_equal_boosted = get_W_min_mse_boosted(np.full((3, 1), 1), U_robbins_monro_equal, k, beta, 1)
     min_mse_equal_boosted_border_x = linear_border(y, W_min_mse_equal_boosted)
 
     borders_x = [bayes_equal_border_x, aci_equal_border_x, min_mse_equal_border_x, aci_equal_boosted_border_x, min_mse_equal_boosted_border_x]
@@ -414,18 +420,18 @@ def task3(m0, m1, b0, b1, b, dataset00, dataset01, dataset10, dataset11, k, beta
 
     # разные корреляционные матрицы
     U_robbins_monro = get_U_robbins_monro(dataset10, dataset11, k)
-    W_aci = get_W_aci(np.full((3, 1), 1), U_robbins_monro, k, beta)
+    W_aci = get_W_aci(np.full((3, 1), 1), U_robbins_monro, k, beta, 1)
     aci_border_x = linear_border(y, W_aci)
 
-    W_aci_boosted = get_W_aci_boosted(np.full((3, 1), 1), U_robbins_monro, k, beta)
+    W_aci_boosted = get_W_aci_boosted(np.full((3, 1), 1), U_robbins_monro, k, beta, 1)
     aci_boosted_border_x = linear_border(y, W_aci_boosted)
 
     bayes_border_x1, _ = bayes_border_fixed(y, 0.5, 0.5, b0, b1, m0, m1)
 
-    W_min_mse = get_W_min_mse(np.full((3, 1), 1), U_robbins_monro, k, beta)
+    W_min_mse = get_W_min_mse(np.full((3, 1), 1), U_robbins_monro, k, beta, 1)
     min_mse_border_x = linear_border(y, W_min_mse)
 
-    W_min_mse_boosted = get_W_min_mse_boosted(np.full((3, 1), 1), U_robbins_monro, k, beta)
+    W_min_mse_boosted = get_W_min_mse_boosted(np.full((3, 1), 1), U_robbins_monro, k, beta, 1)
     min_mse_boosted_border_x = linear_border(y, W_min_mse_boosted)
 
     borders_x = [bayes_border_x1, aci_border_x, min_mse_border_x, aci_boosted_border_x, min_mse_boosted_border_x]
@@ -482,6 +488,8 @@ def research(dataset00, dataset01, dataset10, dataset11, m0, m1, b0, b1, b, equa
     colors = ["red", "orange", "yellow", "green", "blue", "darkblue", "magenta", "brown", "black"]
     y = np.arange(-4, 4, 0.1)
 
+    K = 10
+
     for beta in [0.51, 0.6, 0.7, 0.8, 0.9, 1.]:
         title = f"beta={beta}, {'равные корреляционные матрицы' if equal else 'разные корреляционные матрицы'}, " \
                 f"{'АКП' if aci else 'НСКО'}, {'улучшенный' if boosted else 'обычный'}"
@@ -491,21 +499,24 @@ def research(dataset00, dataset01, dataset10, dataset11, m0, m1, b0, b1, b, equa
         labels = []
 
         for i in range(k, U_length + 1, k):
-            if boosted:
-                if aci:
-                    W_next = get_W_aci_boosted(W_prev, U_robbins_monro[i - k: i, :, :], k, beta)
+            W_next = W_prev = np.ones((3, 1))
+            for j in range(K):
+                if boosted:
+                    if aci:
+                        W_next = get_W_aci_boosted(W_prev, U_robbins_monro[0: i, :, :], i, beta, i * j + 1)
+                    else:
+                        W_next = get_W_min_mse_boosted(W_prev, U_robbins_monro[0: i, :, :], i, beta, i * j + 1)
                 else:
-                    W_next = get_W_min_mse_boosted(W_prev, U_robbins_monro[i - k: i, :, :], k, beta)
-            else:
-                if aci:
-                    W_next = get_W_aci(W_prev, U_robbins_monro[i - k: i, :, :], k, beta)
-                else:
-                    W_next = get_W_min_mse(W_prev, U_robbins_monro[i - k: i, :, :], k, beta)
-            W_prev = W_next
+                    if aci:
+                        W_next = get_W_aci(W_prev, U_robbins_monro[0: i, :, :], i, beta, i * j + 1)
+                    else:
+                        W_next = get_W_min_mse(W_prev, U_robbins_monro[0: i, :, :], i, beta, i * j + 1)
+                W_prev = W_next
 
-            borders_x.append(linear_border(y, W_next))
-            borders_y.append(y)
-            labels.append(f"k={i}, alpha_k={int(get_alpha(i, beta) * 10000) / 10000}")
+                if j == K - 1:
+                    borders_x.append(linear_border(y, W_next))
+                    borders_y.append(y)
+                    labels.append(f"k={i * j + 1}, alpha_k={int(get_alpha(i, beta) * 10000) / 10000}")
 
         if equal:
             borders_x.append(bayes_border_fixed(y, 0.5, 0.5, b, b, m0, m1))
@@ -514,15 +525,16 @@ def research(dataset00, dataset01, dataset10, dataset11, m0, m1, b0, b1, b, equa
         borders_y.append(y)
         labels.append("bayes")
 
-        plot(title, dataset00, dataset01, borders_x, borders_y, colors, labels)
+        # plot(title, dataset00, dataset01, borders_x, borders_y, colors, labels)
 
-    show()
+    # show()
 
     # на что влияет начальное состояние
 
-    beta = 0.55
+    beta = 1.
 
-    for value in [-10, -7, -5, -2, -1, 0, 1, 2, 5, 7, 10]:
+    # for value in [-10, -7, -5, -2, -1, 0, 1, 2, 5, 7, 10]:
+    for value in [1]:
         W_next = W_prev = np.full((3, 1), value)
         title = f"W_0^T={W_next.T}, {'равные корреляционные матрицы' if equal else 'разные корреляционные матрицы'}, " \
                 f"{'АКП' if aci else 'НСКО'}, {'улучшенный' if boosted else 'обычный'}"
@@ -532,21 +544,25 @@ def research(dataset00, dataset01, dataset10, dataset11, m0, m1, b0, b1, b, equa
         labels = []
 
         for i in range(k, U_length + 1, k):
-            if boosted:
-                if aci:
-                    W_next = get_W_aci_boosted(W_prev, U_robbins_monro[i - k: i, :, :], k, beta)
+            W_next = W_prev = np.full((3, 1), value)
+            for j in range(K):
+                if boosted:
+                    if aci:
+                        W_next = get_W_aci_boosted(W_prev, U_robbins_monro[0: i, :, :], i, beta, i * j + 1)
+                    else:
+                        W_next = get_W_min_mse_boosted(W_prev, U_robbins_monro[0: i, :, :], i, beta, i * j + 1)
                 else:
-                    W_next = get_W_min_mse_boosted(W_prev, U_robbins_monro[i - k: i, :, :], k, beta)
-            else:
-                if aci:
-                    W_next = get_W_aci(W_prev, U_robbins_monro[i - k: i, :, :], k, beta)
-                else:
-                    W_next = get_W_min_mse(W_prev, U_robbins_monro[i - k: i, :, :], k, beta)
-            W_prev = W_next
+                    if aci:
+                        W_next = get_W_aci(W_prev, U_robbins_monro[0: i, :, :], i, beta, i * j + 1)
+                    else:
+                        W_next = get_W_min_mse(W_prev, U_robbins_monro[0: i, :, :], i, beta, i * j + 1)
+                W_prev = W_next
 
-            borders_x.append(linear_border(y, W_next))
-            borders_y.append(y)
-            labels.append(f"k={i}")
+                if j == K - 1:
+                    borders_x.append(linear_border(y, W_next))
+                    borders_y.append(y)
+                    labels.append(f"k={i * j + 1}")
+
 
         if equal:
             borders_x.append(bayes_border_fixed(y, 0.5, 0.5, b, b, m0, m1))
@@ -576,19 +592,20 @@ def main():
 
     task1(m0, m1, b0, b1, b, dataset00, dataset01, dataset10, dataset11)
 
-    k = 150
+    k = 400
     task2(m0, m1, b0, b1, b, dataset00, dataset01, dataset10, dataset11, k)
 
-    k = 150
+    k = 400
     beta = 0.55
     task3(m0, m1, b0, b1, b, dataset00, dataset01, dataset10, dataset11, k, beta)
 
     show()
 
     # equal = True
-    # boosted = False
+    # boosted = True
     # aci = True
     # research(dataset00, dataset01, dataset10, dataset11, m0, m1, b0, b1, b, equal, boosted, aci)
+
 
 main()
 
