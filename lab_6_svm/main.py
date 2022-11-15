@@ -40,13 +40,16 @@ def get_w_expanded(dataset):
     svc_clf = SVC(C=(np.max(_lambda) + 1e-04), kernel='linear')
     svc_clf.fit(dataset[:, :-1, 0], dataset[:, -1, 0])
 
-    dual_coef_svc_clf = svc_clf.dual_coef_
-    support_vectors_svc_clf = svc_clf.support_vectors_
+    W_svc_clf = svc_clf.coef_.T
+    w_N_svc_clf = svc_clf.intercept_[0]
 
-    W_svc_clf = np.matmul(dual_coef_svc_clf, support_vectors_svc_clf).reshape(2, 1)
-    w_N_svc_clf = np.mean(np.sign(dual_coef_svc_clf) - np.matmul(W_svc_clf.T, support_vectors_svc_clf.T))
+    linear_svc_clf = LinearSVC(C=(np.max(_lambda) + 1e-04))
+    linear_svc_clf.fit(dataset[:, :-1, 0], dataset[:, -1, 0])
 
-    return expand(w, w_N), expand(W_svc_clf, w_N_svc_clf)
+    W_linear_svc_clf = linear_svc_clf.coef_.T
+    w_N_linear_svc_clf = linear_svc_clf.intercept_[0]
+
+    return expand(w, w_N), expand(W_svc_clf, w_N_svc_clf), expand(W_linear_svc_clf, w_N_linear_svc_clf)
 
 
 # TODO: draw support vectors with different colour
@@ -75,16 +78,23 @@ def main():
     dataset4 = np.load("../lab_6_svm/dataset_4.npy")
 
     train_dataset_separated = get_train_dataset(dataset1, dataset2)
-    W, W_svc_clf = get_w_expanded(train_dataset_separated)
+    W, W_svc_clf, W_linear_svc_clf = get_w_expanded(train_dataset_separated)
 
-    print(f"W:\n{W}\nW_svc_clf:\n{W_svc_clf}\n")
+    print(f"W:\n{W}\n"
+          f"W_svc_clf:\n{W_svc_clf}\n"
+          f"W_linear_svc_clf:\n{W_linear_svc_clf}\n")
 
     y = np.arange(-4, 4, 0.1)
     x = linear_border(y, W)
     x_svc_clf = linear_border(y, W_svc_clf)
+    x_linear_svc_clf = linear_border(y, W_linear_svc_clf)
 
-    plot("", dataset1, dataset2, [x, x, x], [y, y + 1, y - 1], ['black', 'orange', 'blue'], ['', '', ''])
-    plot(f"", dataset1, dataset2, [x_svc_clf, x_svc_clf, x_svc_clf], [y, y + 1, y - 1], ['black', 'orange', 'blue'], ['', '', ''])
+    plot(f"solve_qp (osqp)", dataset1, dataset2, [x, x, x], [y, y + 1, y - 1],
+         ['black', 'orange', 'blue'], ['', '', ''])
+    plot(f"SVC(kernel=linear)", dataset1, dataset2, [x_svc_clf, x_svc_clf, x_svc_clf], [y, y + 1, y - 1],
+         ['black', 'orange', 'blue'], ['', '', ''])
+    plot(f"LinearSVC", dataset1, dataset2, [x_linear_svc_clf, x_linear_svc_clf, x_linear_svc_clf], [y, y + 1, y - 1],
+         ['black', 'orange', 'blue'], ['', '', ''])
     show()
 
 main()
