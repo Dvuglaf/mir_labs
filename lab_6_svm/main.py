@@ -23,33 +23,62 @@ def get_A(dataset, N):
     return A
 
 
-def get_w_expanded(dataset):
-    N = dataset.shape[0]
+def task2(dataset1, dataset2):
+    N = dataset1.shape[2] + dataset2.shape[2]
 
+    # подготовка обучающей выборки
+    dataset = get_train_dataset(dataset1, dataset2)
+
+    # параметры для решения задачи квадратичного программирования
     P = get_P(dataset, N)
     q = np.full((N, 1), -1, dtype=np.double)
     G = np.eye(N) * -1
     h = np.zeros((N,))
     A = get_A(dataset, N)
     b = np.zeros(1)
+
+    # получаем вектор двойственных коэффициентов
     _lambda = solve_qp(P, q, G, h, A, b, solver='cvxopt')
 
-    w = np.matmul((_lambda * A).T, dataset[:, :-1, 0]).reshape(2, 1)
-    w_N = np.mean(A[_lambda > 1e-04] - np.matmul(w.T, dataset[_lambda > 1e-04, :-1, 0].T))
+    # находим весовые коэффициенты из выражения через двойственные коэффициенты
+    # и пороговое значение через весовые коэффициенты и опорные вектора
+    W = np.matmul((_lambda * A).T, dataset[:, :-1, 0]).reshape(2, 1)
+    w_N = np.mean(A[_lambda > 1e-04] - np.matmul(W.T, dataset[_lambda > 1e-04, :-1, 0].T))
+    W = expand(W, w_N)
 
+    # обучение модели SVC (kernel=linear)
     svc_clf = SVC(C=(np.max(_lambda) + 1e-04), kernel='linear')
     svc_clf.fit(dataset[:, :-1, 0], dataset[:, -1, 0])
 
+    # весовые коэффициенты и пороговое значение для модели SVC
     W_svc_clf = svc_clf.coef_.T
     w_N_svc_clf = svc_clf.intercept_[0]
+    W_svc_clf = expand(W_svc_clf, w_N_svc_clf)
 
+    # обучение модели LinearSVC
     linear_svc_clf = LinearSVC(C=(np.max(_lambda) + 1e-04))
     linear_svc_clf.fit(dataset[:, :-1, 0], dataset[:, -1, 0])
 
+    # весовые коэффициенты и пороговое значение для модели LinearSVC
     W_linear_svc_clf = linear_svc_clf.coef_.T
     w_N_linear_svc_clf = linear_svc_clf.intercept_[0]
+    W_linear_svc_clf = expand(W_linear_svc_clf, w_N_linear_svc_clf)
 
-    return expand(w, w_N), expand(W_svc_clf, w_N_svc_clf), expand(W_linear_svc_clf, w_N_linear_svc_clf)
+    print(f"W:\n{W}\n"
+          f"W_svc_clf:\n{W_svc_clf}\n"
+          f"W_linear_svc_clf:\n{W_linear_svc_clf}\n")
+
+    y = np.arange(-4, 4, 0.1)
+    x = linear_border(y, W)
+    x_svc_clf = linear_border(y, W_svc_clf)
+    x_linear_svc_clf = linear_border(y, W_linear_svc_clf)
+
+    plot(f"solve_qp (osqp)", dataset1, dataset2, [x, x, x], [y, y + 1, y - 1],
+         ['black', 'orange', 'blue'], ['', '', ''])
+    plot(f"SVC(kernel=linear)", dataset1, dataset2, [x_svc_clf, x_svc_clf, x_svc_clf], [y, y + 1, y - 1],
+         ['black', 'orange', 'blue'], ['', '', ''])
+    plot(f"LinearSVC", dataset1, dataset2, [x_linear_svc_clf, x_linear_svc_clf, x_linear_svc_clf], [y, y + 1, y - 1],
+         ['black', 'orange', 'blue'], ['', '', ''])
 
 
 # TODO: draw support vectors with different colour
@@ -77,24 +106,8 @@ def main():
     dataset3 = np.load("../lab_6_svm/dataset_3.npy")
     dataset4 = np.load("../lab_6_svm/dataset_4.npy")
 
-    train_dataset_separated = get_train_dataset(dataset1, dataset2)
-    W, W_svc_clf, W_linear_svc_clf = get_w_expanded(train_dataset_separated)
+    task2(dataset1, dataset2)
 
-    print(f"W:\n{W}\n"
-          f"W_svc_clf:\n{W_svc_clf}\n"
-          f"W_linear_svc_clf:\n{W_linear_svc_clf}\n")
-
-    y = np.arange(-4, 4, 0.1)
-    x = linear_border(y, W)
-    x_svc_clf = linear_border(y, W_svc_clf)
-    x_linear_svc_clf = linear_border(y, W_linear_svc_clf)
-
-    plot(f"solve_qp (osqp)", dataset1, dataset2, [x, x, x], [y, y + 1, y - 1],
-         ['black', 'orange', 'blue'], ['', '', ''])
-    plot(f"SVC(kernel=linear)", dataset1, dataset2, [x_svc_clf, x_svc_clf, x_svc_clf], [y, y + 1, y - 1],
-         ['black', 'orange', 'blue'], ['', '', ''])
-    plot(f"LinearSVC", dataset1, dataset2, [x_linear_svc_clf, x_linear_svc_clf, x_linear_svc_clf], [y, y + 1, y - 1],
-         ['black', 'orange', 'blue'], ['', '', ''])
     show()
 
 main()
