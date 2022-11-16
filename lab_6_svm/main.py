@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import qpsolvers
 from skimage.io import show
 from qpsolvers import solve_qp
-from lab_4_linear_classifiers.main import expand, r, linear_border, plot, linear_classificator
+from lab_4_linear_classifiers.main import expand, r, linear_border, plot, classification_error
 from sklearn.svm import SVC, LinearSVC
 
 
@@ -41,10 +41,10 @@ def K_sigmoid(x, y, params):
     return np.tanh(gamma * np.matmul(x.T, y)[0, 0] + c)
 
 
-def get_discriminant_kernel(support_vectors, _lambda_r, x, K, params):
+def get_discriminant_kernel(support_vectors, lambda_r, x, K, params):
     sum = 0
     for j in range(support_vectors.shape[0]):
-        sum += _lambda_r[j] * K(support_vectors[j].reshape(2, 1), x, params)
+        sum += lambda_r[j] * K(support_vectors[j].reshape(2, 1), x, params)
     return sum
 
 
@@ -71,11 +71,13 @@ def get_train_dataset(dataset1, dataset2):
     return np.array(train_dataset)
 
 
+"""
+кладбон неиспользованных функций
+
+
 def get_distance(W, x):
     return np.abs(np.matmul(W, expand(x, 1))) / np.sqrt(W[0] ** 2 + W[1] ** 2)
 
-"""
-кладбон неиспользованных функций
 
 def get_support_vectors_by_classes(support_vectors, W):
     red_support_vectors = []
@@ -122,12 +124,13 @@ def task2(dataset1, dataset2):
     h = np.zeros((N,))
     A = get_A(dataset, N)
     b = np.zeros(1)
+    eps = 1e-04
 
     # получаем вектор двойственных коэффициентов
     _lambda = solve_qp(P, q, G, h, A, b, solver='cvxopt')
 
     # опорные вектора для метода solve_qp
-    support_vectors_positions = _lambda > 1e-04
+    support_vectors_positions = _lambda > eps
     support_vectors = dataset[support_vectors_positions, :-1, 0]
     support_vectors_classes = dataset[support_vectors_positions, -1, 0]
     red_support_vectors = support_vectors[support_vectors_classes == -1]
@@ -139,8 +142,12 @@ def task2(dataset1, dataset2):
     w_N = np.mean(support_vectors_classes - np.matmul(W.T, support_vectors.T))
     W = expand(W, w_N)
 
+    # вероятности ошибочной классификации
+    print(f"solve_qp(osqp) p0: {classification_error(dataset1, W, 0)}")
+    print(f"solve_qp(osqp) p1: {classification_error(dataset2, W, 1)}")
+
     # обучение модели SVC (kernel=linear)
-    svc_clf = SVC(C=(np.max(_lambda) + 1e-04), kernel='linear')
+    svc_clf = SVC(C=(np.max(_lambda) + eps), kernel='linear')
     svc_clf.fit(dataset[:, :-1, 0], dataset[:, -1, 0])
 
     # опорные вектора для метода SVC
@@ -155,14 +162,22 @@ def task2(dataset1, dataset2):
     w_N_svc_clf = svc_clf.intercept_[0]
     W_svc_clf = expand(W_svc_clf, w_N_svc_clf)
 
+    # вероятности ошибочной классификации
+    print(f"SVC(linear) p0: {classification_error(dataset1, W_svc_clf, 0)}")
+    print(f"SVC(linear) p1: {classification_error(dataset2, W_svc_clf, 1)}")
+
     # обучение модели LinearSVC
-    linear_svc_clf = LinearSVC(C=(np.max(_lambda) + 1e-04))
+    linear_svc_clf = LinearSVC(C=(np.max(_lambda) + eps))
     linear_svc_clf.fit(dataset[:, :-1, 0], dataset[:, -1, 0])
 
     # весовые коэффициенты и пороговое значение для модели LinearSVC
     W_linear_svc_clf = linear_svc_clf.coef_.T
     w_N_linear_svc_clf = linear_svc_clf.intercept_[0]
     W_linear_svc_clf = expand(W_linear_svc_clf, w_N_linear_svc_clf)
+
+    # вероятности ошибочной классификации
+    print(f"LinearSVC p0: {classification_error(dataset1, W_linear_svc_clf, 0)}")
+    print(f"LinearSVC p1: {classification_error(dataset2, W_linear_svc_clf, 1)}")
 
     # выводим весовые коэффициенты, полученные для каждого метода
     print(f"W:\n{W}\n"
@@ -210,6 +225,7 @@ def task3(dataset3, dataset4):
     G = np.concatenate((np.eye(N) * -1, np.eye(N)), axis=0)
     A = get_A(dataset, N)
     b = np.zeros(1)
+    eps = 1e-04
 
     for C in [0.1, 1, 10, 20]:
         h = np.concatenate((np.zeros((N,)), np.full((N,), C)), axis=0)
@@ -218,7 +234,7 @@ def task3(dataset3, dataset4):
         _lambda = solve_qp(P, q, G, h, A, b, solver='cvxopt')
 
         # опорные вектора для метода solve_qp
-        support_vectors_positions = _lambda > 1e-04
+        support_vectors_positions = _lambda > eps
         support_vectors = dataset[support_vectors_positions, :-1, 0]
         support_vectors_classes = dataset[support_vectors_positions, -1, 0]
         red_support_vectors = support_vectors[support_vectors_classes == -1]
@@ -229,6 +245,10 @@ def task3(dataset3, dataset4):
         W = np.matmul((_lambda * A)[support_vectors_positions].T, support_vectors).reshape(2, 1)
         w_N = np.mean(support_vectors_classes - np.matmul(W.T, support_vectors.T))
         W = expand(W, w_N)
+
+        # вероятности ошибочной классификации
+        print(f"solve_qp(osqp) C={C} p0: {classification_error(dataset3, W, 0)}")
+        print(f"solve_qp(osqp) C={C} p1: {classification_error(dataset4, W, 1)}")
 
         # обучение модели SVC
         svc_clf = SVC(C=C, kernel='linear')
@@ -245,6 +265,10 @@ def task3(dataset3, dataset4):
         W_svc_clf = svc_clf.coef_.T
         w_N_svc_clf = svc_clf.intercept_[0]
         W_svc_clf = expand(W_svc_clf, w_N_svc_clf)
+
+        # вероятности ошибочной классификации
+        print(f"SVC(linear) C={C} p0: {classification_error(dataset3, W_svc_clf, 0)}")
+        print(f"SVC(linear) C={C} p1: {classification_error(dataset4, W_svc_clf, 1)}")
 
         print(f"C: {C}\n"
               f"W:\n{W}\n"
@@ -282,9 +306,9 @@ def task4(dataset3, dataset4):
     dataset = get_train_dataset(dataset3, dataset4)
 
     # параметры для решения задачи квадратичного программирования
-    # kernel = 'poly'
-    # K = K_polynom
-    # params = [3, 1]
+    kernel = 'poly'
+    K = K_polynom
+    params = [3, 1]
 
     # kernel = 'rbf'
     # K = K_radial
@@ -293,15 +317,16 @@ def task4(dataset3, dataset4):
     # var = np.var(np.sqrt(np.power(dataset[:, 0, :], 2) + np.power(dataset[:, 0, :], 2)))
     # params = [1 / (2 * var)]
 
-    kernel = 'sigmoid'
-    K = K_sigmoid
-    params = [1 / 14, -1]
+    # kernel = 'sigmoid'
+    # K = K_sigmoid
+    # params = [1 / 14, -1]
 
     P = get_P_kernel(dataset, N, K, params)
     q = np.full((N, 1), -1, dtype=np.double)
     G = np.concatenate((np.eye(N) * -1, np.eye(N)), axis=0)
     A = get_A(dataset, N)
     b = np.zeros(1)
+    eps = 1e-04
 
     for C in [0.1, 1, 10]:
         h = np.concatenate((np.zeros((N,)), np.full((N,), C)), axis=0)
@@ -310,7 +335,7 @@ def task4(dataset3, dataset4):
         _lambda = solve_qp(P, q, G, h, A, b, solver='cvxopt')
 
         # опорные вектора для метода solve_qp
-        support_vectors_positions = _lambda > 1e-04
+        support_vectors_positions = _lambda > eps
         support_vectors = dataset[support_vectors_positions, :-1, 0]
         support_vectors_classes = dataset[support_vectors_positions, -1, 0]
         red_support_vectors = support_vectors[support_vectors_classes == -1]
@@ -323,11 +348,27 @@ def task4(dataset3, dataset4):
                                              support_vectors[j].reshape(2, 1), K, params))
         w_N = np.mean(support_vectors_classes - np.array(w_N))
 
+        # вероятности ошибочной классификации
+        p0 = 0.
+        p1 = 0.
+        for i in range(dataset3.shape[2]):
+            if get_discriminant_kernel(support_vectors, (_lambda * A)[support_vectors_positions], dataset3[:, :, i],
+                                       K, params) + w_N > 0:
+                p0 += 1
+            if get_discriminant_kernel(support_vectors, (_lambda * A)[support_vectors_positions], dataset4[:, :, i],
+                                       K, params) + w_N < 0:
+                p1 += 1
+        p0 /= dataset3.shape[2]
+        p1 /= dataset3.shape[2]
+
+        print(f"solve_qp(osqp) C={C} kernel({kernel}) p0: {p0}")
+        print(f"solve_qp(osqp) C={C} kernel({kernel}) p1: {p1}")
+
         # обучение модели SVC
-        # svc_clf = SVC(C=C, kernel=kernel, degree=3, coef0=1) # poly
+        svc_clf = SVC(C=C, kernel=kernel, degree=3, coef0=1) # poly
         # svc_clf = SVC(C=C, kernel=kernel, gamma=1) # radial
         # svc_clf = SVC(C=C, kernel=kernel, gamma=1 / (2 * var)) # radial gauss
-        svc_clf = SVC(C=C, kernel=kernel, coef0=-1, gamma=1/14) # sigmoid
+        # svc_clf = SVC(C=C, kernel=kernel, coef0=-1, gamma=1/14) # sigmoid
         svc_clf.fit(dataset[:, :-1, 0], dataset[:, -1, 0])
 
         # опорные вектора для метода SVC
@@ -336,6 +377,19 @@ def task4(dataset3, dataset4):
         support_vectors_svc_classes = dataset[support_vectors_svc_indices, -1, 0]
         red_support_vectors_svc = support_vectors_svc[support_vectors_svc_classes == -1]
         green_support_vectors_svc = support_vectors_svc[support_vectors_svc_classes == 1]
+
+        # вероятности ошибочной классификации
+        test_dataset3 = dataset[dataset[:, -1, 0] < 0, :-1, 0]
+        test_dataset4 = dataset[dataset[:, -1, 0] > 0, :-1, 0]
+
+        predicted_class3 = svc_clf.predict(test_dataset3)
+        predicted_class4 = svc_clf.predict(test_dataset4)
+
+        p0 = np.sum(predicted_class3 > 0) / test_dataset3.shape[0]
+        p1 = np.sum(predicted_class4 < 0) / test_dataset4.shape[0]
+
+        print(f"SVC C={C} kernel({kernel}) p0: {p0}")
+        print(f"SVC C={C} kernel({kernel}) p1: {p1}")
 
         # строим разделяющую полосу и разделяющую гиперплоскость
         y = np.linspace(-4, 4, N)
@@ -378,9 +432,9 @@ def main():
     dataset3 = np.load("../lab_6_svm/dataset_3.npy")
     dataset4 = np.load("../lab_6_svm/dataset_4.npy")
 
-    task2(dataset1, dataset2)
+    # task2(dataset1, dataset2)
     # task3(dataset3, dataset4)
-    # task4(dataset3, dataset4)
+    task4(dataset3, dataset4)
 
     show()
 
