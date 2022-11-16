@@ -136,7 +136,7 @@ def task2(dataset1, dataset2):
     # находим весовые коэффициенты из выражения через двойственные коэффициенты
     # и пороговое значение через весовые коэффициенты и опорные вектора
     W = np.matmul((_lambda * A)[support_vectors_positions].T, support_vectors).reshape(2, 1)
-    w_N = np.mean(A[support_vectors_positions] - np.matmul(W.T, support_vectors.T))
+    w_N = np.mean(support_vectors_classes - np.matmul(W.T, support_vectors.T))
     W = expand(W, w_N)
 
     # обучение модели SVC (kernel=linear)
@@ -227,7 +227,7 @@ def task3(dataset3, dataset4):
         # находим весовые коэффициенты из выражения через двойственные коэффициенты
         # и пороговое значение через весовые коэффициенты и опорные вектора
         W = np.matmul((_lambda * A)[support_vectors_positions].T, support_vectors).reshape(2, 1)
-        w_N = np.mean(A[support_vectors_positions] - np.matmul(W.T, support_vectors.T))
+        w_N = np.mean(support_vectors_classes - np.matmul(W.T, support_vectors.T))
         W = expand(W, w_N)
 
         # обучение модели SVC
@@ -321,7 +321,7 @@ def task4(dataset3, dataset4):
         for j in range(support_vectors.shape[0]):
             w_N.append(get_discriminant_kernel(support_vectors, (_lambda * A)[support_vectors_positions],
                                              support_vectors[j].reshape(2, 1), K, params))
-        w_N = np.mean(A[support_vectors_positions] - np.array(w_N))
+        w_N = np.mean(support_vectors_classes - np.array(w_N))
 
         # обучение модели SVC
         # svc_clf = SVC(C=C, kernel=kernel, degree=3, coef0=1) # poly
@@ -378,9 +378,9 @@ def main():
     dataset3 = np.load("../lab_6_svm/dataset_3.npy")
     dataset4 = np.load("../lab_6_svm/dataset_4.npy")
 
-    # task2(dataset1, dataset2)
+    task2(dataset1, dataset2)
     # task3(dataset3, dataset4)
-    task4(dataset3, dataset4)
+    # task4(dataset3, dataset4)
 
     show()
 
