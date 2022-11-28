@@ -306,16 +306,16 @@ def task4(dataset3, dataset4):
     dataset = get_train_dataset(dataset3, dataset4)
 
     # параметры для решения задачи квадратичного программирования
-    kernel = 'poly'
-    K = K_polynom
-    params = [3, 1]
+    # kernel = 'poly'
+    # K = K_polynom
+    # params = [3, 1]
 
-    # kernel = 'rbf'
-    # K = K_radial
+    kernel = 'rbf'
+    K = K_radial
     # params = [1]
     # gauss
-    # var = np.var(np.sqrt(np.power(dataset[:, 0, :], 2) + np.power(dataset[:, 0, :], 2)))
-    # params = [1 / (2 * var)]
+    var = np.var(np.sqrt(np.power(dataset[:, 0, :], 2) + np.power(dataset[:, 0, :], 2)))
+    params = [1 / (2 * var)]
 
     # kernel = 'sigmoid'
     # K = K_sigmoid
@@ -426,16 +426,14 @@ def task4(dataset3, dataset4):
 
 
 
-def main():
+if __name__ == "__main__":
     dataset1 = np.load("../lab_6_svm/dataset_1.npy")
     dataset2 = np.load("../lab_6_svm/dataset_2.npy")
     dataset3 = np.load("../lab_6_svm/dataset_3.npy")
     dataset4 = np.load("../lab_6_svm/dataset_4.npy")
 
     # task2(dataset1, dataset2)
-    # task3(dataset3, dataset4)
-    task4(dataset3, dataset4)
+    task3(dataset3, dataset4)
+    # task4(dataset3, dataset4)
 
     show()
-
-main()
