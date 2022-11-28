@@ -204,8 +204,8 @@ def plot(title: str, dataset0: np.array, dataset1: np.array, border_x_arr, borde
     plt.figure()
     plt.title(title)
 
-    plt.plot(dataset0[0, :, :], dataset0[1, :, :], color='red', marker='.')
-    plt.plot(dataset1[0, :, :], dataset1[1, :, :], color='green', marker='+')
+    plt.scatter(dataset0[0, :, :], dataset0[1, :, :], color='red', marker='.')
+    plt.scatter(dataset1[0, :, :], dataset1[1, :, :], color='green', marker='+')
 
     for i in range(len(border_x_arr)):
         plt.plot(border_x_arr[i], border_y_arr[i], color=colors[i], label=labels[i])
@@ -576,7 +576,7 @@ def research(dataset00, dataset01, dataset10, dataset11, m0, m1, b0, b1, b, equa
     show()
 
 
-def main():
+if __name__ == "__main__":
     m0 = np.array([[0], [-2]])
     m1 = np.array([[-1], [1]])
 
@@ -605,8 +605,3 @@ def main():
     # boosted = True
     # aci = True
     # research(dataset00, dataset01, dataset10, dataset11, m0, m1, b0, b1, b, equal, boosted, aci)
-
-
-main()
-
-
