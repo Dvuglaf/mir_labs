@@ -106,7 +106,7 @@ def get_right_classified(dataset: np.array, ind_wrong_classified: np.array) -> n
             return dataset[i].reshape((9, 9))
 
 
-def main():
+if __name__ == "__main__":
     # Представители класса
     symbol_u = np.array([[0, 1, 0, 0, 0, 0, 0, 1, 0],
                          [0, 1, 0, 0, 0, 0, 0, 1, 0],
@@ -242,5 +242,3 @@ def main():
 
     show()
 
-
-main()
