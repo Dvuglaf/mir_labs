@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from skimage.io import show
 from lab_1_dataset_generation.main import generate_dataset, evaluate_parameters
 from lab_2_classifiers.main import classification_error
 
@@ -97,7 +99,7 @@ def classify_data(train_datasets, test_datasets, classificator, param=0):
     return np.array(test_results)
 
 
-def get_classification_results(test_results, test_datasets):
+def get_classification_errors(test_results, test_datasets):
     p_errors = get_p_errors(test_results)
     aprior_probs = get_aprior_probs(test_datasets)
     risk_estimation = get_risk_estimation(aprior_probs, p_errors)
@@ -108,6 +110,17 @@ def get_classification_results(test_results, test_datasets):
                 print(f"Вероятность ошибочной классификации p{i}{j}: {p_errors[i, j]}")
 
     print(f"Эмпирический риск: {risk_estimation}")
+
+
+def plot_test_data(test_datasets, test_results, title, colors):
+    plt.figure()
+    plt.suptitle(title)
+
+    for i in range(len(test_datasets)):
+        plt.scatter(test_datasets[i][0, :, :], test_datasets[i][1, :, :], color=colors[i])
+        plt.scatter(test_datasets[i][0, :, test_results[i] != i], test_datasets[i][1, :, test_results[i] != i],
+                 linewidth=1.5, facecolors='none', edgecolors='k')
+
 
 
 def main():
@@ -131,14 +144,18 @@ def main():
     print(f"Вероятность ошибочной классификации p10: {p10}")
     print(f"Эмпирический риск: {0.5 * p01 + 0.5 * p10}")
 
-    print("\nметод Парзена, равные корреляционные матрицы, 2 класса")
+    title = "\nметод Парзена, равные корреляционные матрицы, 2 класса"
+    print(title)
     test_results = classify_data(train_datasets, test_datasets, classificator_parzen)
-    get_classification_results(test_results, test_datasets)
+    get_classification_errors(test_results, test_datasets)
+    plot_test_data(test_datasets, test_results, title, ['red', 'green'])
 
     for k in [1, 3, 5]:
-        print(f"\nметод K ближайщих соседей, k = {k}, равные корреляционные матрицы, 2 класса")
+        title = f"\nметод K ближайщих соседей, k = {k}, равные корреляционные матрицы, 2 класса"
+        print(title)
         test_results = classify_data(train_datasets, test_datasets, classificator_knn, k)
-        get_classification_results(test_results, test_datasets)
+        get_classification_errors(test_results, test_datasets)
+        plot_test_data(test_datasets, test_results, title, ['red', 'green'])
 
     train_datasets = [generate_dataset(b0, m0, 50), generate_dataset(b1, m1, 50), generate_dataset(b2, m2, 50)]
     test_datasets = [generate_dataset(b0, m0, 100), generate_dataset(b1, m1, 100), generate_dataset(b2, m2, 100)]
@@ -158,14 +175,21 @@ def main():
     print(f"Вероятность ошибочной классификации p21: {p21}")
     print(f"Эмпирический риск: {1 / 3 * (p01 + p02) + 1 / 3 * (p10 + p12) + 1 / 3 * (p20 + p21)}")
 
-    print("\nметод Парзена, разные корреляционные матрицы, 3 класса")
+    title = "\nметод Парзена, разные корреляционные матрицы, 3 класса"
+    print(title)
     test_results = classify_data(train_datasets, test_datasets, classificator_parzen)
-    get_classification_results(test_results, test_datasets)
+    get_classification_errors(test_results, test_datasets)
+    plot_test_data(test_datasets, test_results, title, ['red', 'green', 'blue'])
+
 
     for k in [1, 3, 5]:
-        print(f"\nметод K ближайщих соседей, k = {k}, разные корреляционные матрицы, 3 класса")
+        title = f"\nметод K ближайщих соседей, k = {k}, разные корреляционные матрицы, 3 класса"
+        print(title)
         test_results = classify_data(train_datasets, test_datasets, classificator_knn, k)
-        get_classification_results(test_results, test_datasets)
+        get_classification_errors(test_results, test_datasets)
+        plot_test_data(test_datasets, test_results, title, ['red', 'green', 'blue'])
+
+    show()
 
 
 main()
