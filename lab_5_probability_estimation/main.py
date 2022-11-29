@@ -1,5 +1,6 @@
 import numpy as np
 from lab_1_dataset_generation.main import generate_dataset, evaluate_parameters
+from lab_2_classifiers.main import classification_error
 
 
 def Kernel_Density_Estimation_Normal(x, dataset):
@@ -16,15 +17,8 @@ def Kernel_Density_Estimation_Normal(x, dataset):
     return result[0] / N
 
 
-def classificator_parzen(x, datasets):
-    N_values = []
-    for dataset in datasets:
-        N_values.append(dataset.shape[-1])
-
-    P_values = []
-    for dataset in datasets:
-        P_values.append(dataset.shape[-1] / np.sum(N_values))
-    P_values = np.array(P_values)
+def classificator_parzen(x, datasets, args=0):
+    P_values = get_aprior_probs(datasets)
 
     density_values = []
     for dataset in datasets:
@@ -58,6 +52,64 @@ def classificator_knn(x, datasets, K):
     return np.argmax(count_neighbors)
 
 
+def get_p_errors(test_results):
+    p_errors = []
+    for i in range(len(test_results)):
+        p_errors_ij = []
+
+        for j in range(len(test_results)):
+            if i != j:
+                p_errors_ij.append(np.sum([test_results[i] == j]) / len(test_results[i]))
+            else:
+                p_errors_ij.append(0)
+
+        p_errors.append(np.array(p_errors_ij))
+
+    return np.array(p_errors)
+
+
+def get_aprior_probs(datasets):
+    N_values = []
+    for dataset in datasets:
+        N_values.append(dataset.shape[-1])
+
+    P_values = []
+    for dataset in datasets:
+        P_values.append(dataset.shape[-1] / np.sum(N_values))
+
+    return np.array(P_values)
+
+
+def get_risk_estimation(aprior_probs, p_errors):
+    return np.sum(aprior_probs * np.sum(p_errors, axis=1))
+
+
+def classify_data(train_datasets, test_datasets, classificator, param=0):
+    test_results = []
+    for test_dataset in test_datasets:
+        test_result = []
+
+        for j in range(test_dataset.shape[-1]):
+            test_result.append(classificator(test_dataset[:, :, j], train_datasets, param))
+
+        test_results.append(np.array(test_result))
+
+    return np.array(test_results)
+
+
+def get_classification_results(test_results, test_datasets):
+    p_errors = get_p_errors(test_results)
+    aprior_probs = get_aprior_probs(test_datasets)
+    risk_estimation = get_risk_estimation(aprior_probs, p_errors)
+
+    for i in range(len(p_errors)):
+        for j in range(len(p_errors)):
+            if i != j:
+                print(f"Вероятность ошибочной классификации p{i}{j}: {p_errors[i, j]}")
+
+    print(f"Эмпирический риск: {risk_estimation}")
+
+
 def main():
     m0 = np.array(([0], [-2]))
     m1 = np.array(([-1], [1]))
@@ -72,78 +124,48 @@ def main():
     train_datasets = [generate_dataset(b, m0, 50), generate_dataset(b, m1, 50)]
     test_datasets = [generate_dataset(b, m0, 100), generate_dataset(b, m1, 100)]
 
-    # обобщить для двух классификаторов, сделать вывод
+    print("\nклассификатор Байеса, равные корреляционные матрицы, 2 класса")
+    p01 = classification_error(test_datasets[0], 0.5, 0.5, b, b, m0, m1, test_datasets[0].shape[-1])
+    p10 = classification_error(test_datasets[1], 0.5, 0.5, b, b, m1, m0, test_datasets[1].shape[-1])
+    print(f"Вероятность ошибочной классификации p01: {p01}")
+    print(f"Вероятность ошибочной классификации p10: {p10}")
+    print(f"Эмпирический риск: {0.5 * p01 + 0.5 * p10}")
 
-    k = 5
+    print("\nметод Парзена, равные корреляционные матрицы, 2 класса")
+    test_results = classify_data(train_datasets, test_datasets, classificator_parzen)
+    get_classification_results(test_results, test_datasets)
 
-    test_results = []
-    for test_dataset in test_datasets:
-        test_result = []
-
-        for j in range(test_dataset.shape[-1]):
-            test_result.append(classificator_knn(test_dataset[:, :, j], train_datasets, k))
-
-        test_results.append(np.array(test_result))
-
-    p0 = np.sum([test_results[0] != 0]) / len(test_results[0])
-    p1 = np.sum([test_results[1] != 1]) / len(test_results[1])
-
-    N0 = test_datasets[0].shape[-1]
-    N1 = test_datasets[1].shape[-1]
-    P0 = N0 / (N0 + N1)
-    P1 = N1 / (N0 + N1)
-
-    risk_estimation = P0 * p0 + P1 * p1
-
-    print(f"Вероятность ошибки первого рода p0: {p0}")
-    print(f"Вероятность ошибки второго рода p1: {p1}")
-    print(f"Эмпирический риск: {risk_estimation}")
+    for k in [1, 3, 5]:
+        print(f"\nметод K ближайщих соседей, k = {k}, равные корреляционные матрицы, 2 класса")
+        test_results = classify_data(train_datasets, test_datasets, classificator_knn, k)
+        get_classification_results(test_results, test_datasets)
 
     train_datasets = [generate_dataset(b0, m0, 50), generate_dataset(b1, m1, 50), generate_dataset(b2, m2, 50)]
     test_datasets = [generate_dataset(b0, m0, 100), generate_dataset(b1, m1, 100), generate_dataset(b2, m2, 100)]
 
-    test_results = []
-    for test_dataset in test_datasets:
-        test_result = []
+    print("\nклассификатор Байеса, разные корреляционные матрицы, 3 класса")
+    p01 = classification_error(test_datasets[0], 1 / 3, 1 / 3, b0, b1, m0, m1, test_datasets[0].shape[-1])
+    p02 = classification_error(test_datasets[0], 1 / 3, 1 / 3, b0, b2, m0, m2, test_datasets[0].shape[-1])
+    p10 = classification_error(test_datasets[1], 1 / 3, 1 / 3, b1, b0, m1, m0, test_datasets[1].shape[-1])
+    p12 = classification_error(test_datasets[1], 1 / 3, 1 / 3, b1, b2, m1, m2, test_datasets[1].shape[-1])
+    p20 = classification_error(test_datasets[2], 1 / 3, 1 / 3, b2, b0, m2, m0, test_datasets[2].shape[-1])
+    p21 = classification_error(test_datasets[2], 1 / 3, 1 / 3, b2, b1, m2, m1, test_datasets[2].shape[-1])
+    print(f"Вероятность ошибочной классификации p01: {p01}")
+    print(f"Вероятность ошибочной классификации p02: {p02}")
+    print(f"Вероятность ошибочной классификации p10: {p10}")
+    print(f"Вероятность ошибочной классификации p12: {p12}")
+    print(f"Вероятность ошибочной классификации p20: {p20}")
+    print(f"Вероятность ошибочной классификации p21: {p21}")
+    print(f"Эмпирический риск: {1 / 3 * (p01 + p02) + 1 / 3 * (p10 + p12) + 1 / 3 * (p20 + p21)}")
 
-        for j in range(test_dataset.shape[-1]):
-            test_result.append(classificator_knn(test_dataset[:, :, j], train_datasets, k))
+    print("\nметод Парзена, разные корреляционные матрицы, 3 класса")
+    test_results = classify_data(train_datasets, test_datasets, classificator_parzen)
+    get_classification_results(test_results, test_datasets)
 
-        test_results.append(np.array(test_result))
-
-    p01 = np.sum([test_results[0] == 1]) / len(test_results[0])
-    p10 = np.sum([test_results[1] == 0]) / len(test_results[1])
-
-    p02 = np.sum([test_results[0] == 2]) / len(test_results[0])
-    p20 = np.sum([test_results[2] == 0]) / len(test_results[2])
-
-    p12 = np.sum([test_results[1] == 2]) / len(test_results[1])
-    p21 = np.sum([test_results[2] == 1]) / len(test_results[2])
-
-    N0 = test_datasets[0].shape[-1]
-    N1 = test_datasets[1].shape[-1]
-    N2 = test_datasets[2].shape[-1]
-
-    P0 = N0 / (N0 + N1 + N2)
-    P1 = N1 / (N0 + N1 + N2)
-    P2 = N2 / (N0 + N1 + N2)
-
-    risk_estimation = P0 * (p01 + p02) + P1 * (p10 + p12) + P2 * (p20 + p21)
-
-    print(f"Вероятность ошибки p01: {p01}")
-    print(f"Вероятность ошибки p10: {p10}")
-    print(f"Вероятность ошибки p02: {p02}")
-    print(f"Вероятность ошибки p20: {p20}")
-    print(f"Вероятность ошибки p12: {p12}")
-    print(f"Вероятность ошибки p21: {p21}")
-    print(f"Эмпирический риск: {risk_estimation}")
-
-
-
-
-
-
-
+    for k in [1, 3, 5]:
+        print(f"\nметод K ближайщих соседей, k = {k}, разные корреляционные матрицы, 3 класса")
+        test_results = classify_data(train_datasets, test_datasets, classificator_knn, k)
+        get_classification_results(test_results, test_datasets)
 
 
 main()
