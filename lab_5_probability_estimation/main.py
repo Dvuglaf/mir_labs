@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage.io import show
 from lab_1_dataset_generation.main import generate_dataset, evaluate_parameters
-from lab_2_classifiers.main import classification_error
+from lab_2_classifiers.main import classification_error, bayes_border_fixed
 
 
 def Kernel_Density_Estimation_Normal(x, dataset):
@@ -10,11 +10,11 @@ def Kernel_Density_Estimation_Normal(x, dataset):
     m, B = evaluate_parameters(dataset, N)
     k = 1 / 4
     h = np.float_power(N, -k / 2)
-    B_parzen = (1 + h ** 2) * B
+    # B_parzen = (1 + h ** 2) * B
     result = 0
     for i in range(N):
-        result += 1 / (2 * np.pi) * (h ** -2) / np.sqrt(np.linalg.det(B_parzen)) * np.exp(
-            -0.5 * (h ** -2) * np.matmul(np.matmul((x - dataset[:, :, i]).T, np.linalg.inv(B_parzen)),
+        result += 1 / (2 * np.pi) * (h ** -2) / np.sqrt(np.linalg.det(B)) * np.exp(
+            -0.5 * (h ** -2) * np.matmul(np.matmul((x - dataset[:, :, i]).T, np.linalg.inv(B)),
                                          (x - dataset[:, :, i])))
     return result[0] / N
 
@@ -48,8 +48,8 @@ def classificator_knn(x, datasets, K):
 
     # количество соседей из каждого класса
     count_neighbors = []
-    for i in range(len(datasets)):
-        count_neighbors.append(len(nearest_neighbors[nearest_neighbors[:, 1] == i]))
+    for class_label in range(len(datasets)):
+        count_neighbors.append(len(nearest_neighbors[nearest_neighbors[:, 1] == class_label]))
 
     return np.argmax(count_neighbors)
 
@@ -99,9 +99,9 @@ def classify_data(train_datasets, test_datasets, classificator, param=0):
     return np.array(test_results)
 
 
-def get_classification_errors(test_results, test_datasets):
+def get_classification_errors(test_results, train_datasets):
     p_errors = get_p_errors(test_results)
-    aprior_probs = get_aprior_probs(test_datasets)
+    aprior_probs = get_aprior_probs(train_datasets)
     risk_estimation = get_risk_estimation(aprior_probs, p_errors)
 
     for i in range(len(p_errors)):
@@ -120,7 +120,6 @@ def plot_test_data(test_datasets, test_results, title, colors):
         plt.scatter(test_datasets[i][0, :, :], test_datasets[i][1, :, :], color=colors[i])
         plt.scatter(test_datasets[i][0, :, test_results[i] != i], test_datasets[i][1, :, test_results[i] != i],
                  linewidth=1.5, facecolors='none', edgecolors='k')
-
 
 
 def main():
@@ -144,18 +143,34 @@ def main():
     print(f"Вероятность ошибочной классификации p10: {p10}")
     print(f"Эмпирический риск: {0.5 * p01 + 0.5 * p10}")
 
+    y = np.arange(-4, 4, 0.1)
+
+    x = bayes_border_fixed(y, 0.5, 0.5, b, b, m0, m1)
+    x = np.reshape(x, y.shape)
+
     title = "\nметод Парзена, равные корреляционные матрицы, 2 класса"
     print(title)
     test_results = classify_data(train_datasets, test_datasets, classificator_parzen)
-    get_classification_errors(test_results, test_datasets)
+    get_classification_errors(test_results, train_datasets)
     plot_test_data(test_datasets, test_results, title, ['red', 'green'])
+    plt.plot(x, y, color='black')
+    plt.xlim(left=-4, right=4)
+    plt.ylim(bottom=-4, top=4)
+    plt.figure()
+    plt.scatter(train_datasets[0][0, :, :], train_datasets[0][1, :, :], color='red')
+    plt.scatter(train_datasets[1][0, :, :], train_datasets[1][1, :, :], color='green')
+    plt.xlim(left=-4, right=4)
+    plt.ylim(bottom=-4, top=4)
 
     for k in [1, 3, 5]:
         title = f"\nметод K ближайщих соседей, k = {k}, равные корреляционные матрицы, 2 класса"
         print(title)
         test_results = classify_data(train_datasets, test_datasets, classificator_knn, k)
-        get_classification_errors(test_results, test_datasets)
+        get_classification_errors(test_results, train_datasets)
         plot_test_data(test_datasets, test_results, title, ['red', 'green'])
+        plt.plot(x, y, color='black')
+        plt.xlim(left=-4, right=4)
+        plt.ylim(bottom=-4, top=4)
 
     train_datasets = [generate_dataset(b0, m0, 50), generate_dataset(b1, m1, 50), generate_dataset(b2, m2, 50)]
     test_datasets = [generate_dataset(b0, m0, 100), generate_dataset(b1, m1, 100), generate_dataset(b2, m2, 100)]
@@ -178,15 +193,15 @@ def main():
     title = "\nметод Парзена, разные корреляционные матрицы, 3 класса"
     print(title)
     test_results = classify_data(train_datasets, test_datasets, classificator_parzen)
-    get_classification_errors(test_results, test_datasets)
-    plot_test_data(test_datasets, test_results, title, ['red', 'green', 'blue'])
+    get_classification_errors(test_results, train_datasets)
+    # plot_test_data(test_datasets, test_results, title, ['red', 'green', 'blue'])
 
 
     for k in [1, 3, 5]:
         title = f"\nметод K ближайщих соседей, k = {k}, разные корреляционные матрицы, 3 класса"
         print(title)
         test_results = classify_data(train_datasets, test_datasets, classificator_knn, k)
-        get_classification_errors(test_results, test_datasets)
+        get_classification_errors(test_results, train_datasets)
         plot_test_data(test_datasets, test_results, title, ['red', 'green', 'blue'])
 
     show()
