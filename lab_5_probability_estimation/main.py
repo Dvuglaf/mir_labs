@@ -122,7 +122,7 @@ def plot_test_data(test_datasets, test_results, title, colors):
                  linewidth=1.5, facecolors='none', edgecolors='k')
 
 
-def main():
+if __name__ == "__main__":
     m0 = np.array(([0], [-2]))
     m1 = np.array(([-1], [1]))
     m2 = np.array(([2], [0]))
@@ -206,5 +206,3 @@ def main():
 
     show()
 
-
-main()
