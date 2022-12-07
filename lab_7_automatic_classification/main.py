@@ -49,7 +49,7 @@ def maxmin_dist_clasters(dataset):
         x_clasters = np.argmin(distances, axis=0)
 
         # вывод
-        colors = ['red', 'olive', 'gold', 'green', 'blue', 'purple', 'brown', 'neon']
+        colors = ['red', 'gold', 'green', 'blue', 'purple', 'grey', 'brown']
         fig = plt.figure()
         plt.suptitle(f"Кластеризация максиминным алгоритмом, число кластеров: {num_of_clasters}")
 
@@ -90,7 +90,70 @@ def maxmin_dist_clasters(dataset):
     plt.xticks(range(2, len(claster_centres) + 1, 1))
     plt.legend()
 
-    return np.array(claster_centres), x_clasters
+    # return np.array(claster_centres), x_clasters
+
+
+def k_mean(original_dataset, dataset, num_of_clasters):
+    N = dataset.shape[-1]
+    claster_centres = []
+    r = 1
+    for i in range(num_of_clasters):
+        claster_centres.append(dataset[:, :, i])
+
+    r += 1
+    finished = False
+    x_clasters = []
+    num_of_changes = [N]
+    while not finished:
+        # вычисляем все расстояния между векторами и центрами кластеров
+        distances = np.zeros((num_of_clasters, N))
+        for i in range(num_of_clasters):
+            for j in range(N):
+                distances[i, j] = np.linalg.norm(dataset[:, :, j] - claster_centres[i])
+
+        # для каждого вектора находим тот центр кластера l, расстояние до которого минимально
+        new_x_clasters = np.argmin(distances, axis=0)
+
+        # количество векторов, сменивших номер кластера
+        if len(x_clasters) != 0:
+            num_of_changes.append(np.count_nonzero(new_x_clasters != x_clasters))
+
+        x_clasters = new_x_clasters
+
+        # вывод
+        colors = ['red', 'gold', 'green', 'blue', 'purple', 'grey', 'brown']
+        fig = plt.figure()
+        plt.suptitle(f"Кластеризация алгоритмом K внутригрупповых средних, число кластеров: {num_of_clasters}, "
+                     f"номер итерации {r}")
+
+        sp = fig.add_subplot(121)
+        sp.set_title("Исходные вектора")
+        for i in range(original_dataset.shape[-1]):
+            sp.scatter(original_dataset[0, :, i], original_dataset[1, :, i], color=colors[i % 5], marker='.')
+
+        sp = fig.add_subplot(122)
+        sp.set_title("Результат кластеризации")
+        sp.scatter(np.array(claster_centres)[:, 0, 0], np.array(claster_centres)[:, 1, 0],
+                   linewidth=1, facecolors='none', edgecolors='k')
+        for i in range(len(claster_centres)):
+            sp.scatter(dataset[0, :, x_clasters == i], dataset[1, :, x_clasters == i], color=colors[i],
+                       marker='.')
+
+        new_claster_centres = []
+        for i in range(num_of_clasters):
+            new_claster_centres.append(np.mean(dataset[:, :, x_clasters == i], axis=2))
+
+        if (np.array(claster_centres) == np.array(new_claster_centres)).all():
+            finished = True
+        else:
+            claster_centres = new_claster_centres
+            r += 1
+
+    # графики
+    fig = plt.figure()
+    plt.suptitle("Зависимость числа векторов признаков, сменивших номер кластера, от номера итерации")
+    plt.plot(range(2, r + 1, 1), num_of_changes, color='orange')
+    plt.xticks(range(2, r + 1, 1))
 
 
 def main():
@@ -122,8 +185,17 @@ def main():
         dataset[:, :, 5 * i + 3] = dataset_3[:, :, i]
         dataset[:, :, 5 * i + 4] = dataset_4[:, :, i]
 
-    claster_centres, dataset_clasters = maxmin_dist_clasters(dataset)
-    print(len(claster_centres))
+    # maxmin_dist_clasters(dataset)
+
+    # "правильная" кластеризация
+    indices = np.arange(0, dataset.shape[-1], 1)
+    # k_mean(dataset, dataset[:, :, indices], 3)
+    k_mean(dataset, dataset[:, :, indices], 5)
+
+    # "неправильная" кластеризация
+    # indices = np.arange(0, dataset.shape[-1], 1)
+    # np.random.shuffle(indices)
+    # k_mean(dataset, dataset[:, :, indices], 5)
 
     plt.show()
 
